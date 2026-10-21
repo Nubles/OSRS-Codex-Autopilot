@@ -4,6 +4,9 @@ package com.codex.autopilot.core;
 public final class Settings
 {
 	private boolean chores = true;
+	private boolean herbs = true;
+	private boolean hops = true;
+	private boolean rounds;
 	private boolean dailies = true;
 	private boolean kingdom = true;
 	private boolean navigator = true;
@@ -22,6 +25,25 @@ public final class Settings
 	public Settings chores(boolean v)
 	{
 		chores = v;
+		return this;
+	}
+
+	public Settings herbs(boolean v)
+	{
+		herbs = v;
+		return this;
+	}
+
+	public Settings hops(boolean v)
+	{
+		hops = v;
+		return this;
+	}
+
+	/** Codex Rounds is switched on, so chore steps can hand the route over to it. */
+	public Settings rounds(boolean v)
+	{
+		rounds = v;
 		return this;
 	}
 
@@ -82,6 +104,22 @@ public final class Settings
 	public boolean isChores()
 	{
 		return chores;
+	}
+
+	/** Herb runs, with the allotments and flowers beside them. */
+	public boolean isHerbs()
+	{
+		return herbs;
+	}
+
+	public boolean isHops()
+	{
+		return hops;
+	}
+
+	public boolean isRounds()
+	{
+		return rounds;
 	}
 
 	public boolean isDailies()

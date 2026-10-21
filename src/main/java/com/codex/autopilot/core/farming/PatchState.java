@@ -69,6 +69,12 @@ public final class PatchState
 		return produce == Produce.WEEDS && stage == 0;
 	}
 
+	/** A scarecrow standing in a flower patch. */
+	public boolean isScarecrow()
+	{
+		return produce == Produce.SCARECROW;
+	}
+
 	/** Weeds, raked or not: nothing is planted. */
 	public boolean isEmpty()
 	{

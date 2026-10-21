@@ -105,6 +105,11 @@ public final class Growth
 			return Reading.unseen(spot);
 		}
 
+		if (state.isScarecrow())
+		{
+			// Put there to keep birds off the allotments: nothing to do and nothing lost.
+			return Reading.patch(spot, seen, Status.DONE, state, Action.GROWN, 0, "Scarecrow");
+		}
 		int stage = state.getStage();
 		int stages = state.getStages();
 		int tickRate = state.getProduce().getTickrate();

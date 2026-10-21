@@ -34,6 +34,58 @@ import net.runelite.api.gameval.ItemID;
 public enum Produce
 {
 	WEEDS("Weeds", null, ItemID.WEEDS, 5, 4, 0, 1, -1, 1),
+	/** A scarecrow in a flower patch: put there on purpose, so never a chore. */
+	SCARECROW("Scarecrow", PatchKind.FLOWER, ItemID.SCARECROW_COMPLETE, 5, 4, 0, 1, -1, 23),
+
+	// Allotments
+	POTATO("Potato", PatchKind.ALLOTMENT, ItemID.POTATO, 10, 5, 0, 3, ItemID.POTATO_SEED, 1),
+	ONION("Onion", PatchKind.ALLOTMENT, ItemID.ONION, 10, 5, 0, 3, ItemID.ONION_SEED, 5),
+	CABBAGE("Cabbage", PatchKind.ALLOTMENT, ItemID.CABBAGE, 10, 5, 0, 3, ItemID.CABBAGE_SEED, 7),
+	TOMATO("Tomato", PatchKind.ALLOTMENT, ItemID.TOMATO, 10, 5, 0, 3, ItemID.TOMATO_SEED, 12),
+	SWEETCORN("Sweetcorn", PatchKind.ALLOTMENT, ItemID.SWEETCORN, 10, 7, 0, 3, ItemID.SWEETCORN_SEED, 20),
+	STRAWBERRY("Strawberry", PatchKind.ALLOTMENT, ItemID.STRAWBERRY, 10, 7, 0, 3, ItemID.STRAWBERRY_SEED, 31),
+	WATERMELON("Watermelon", PatchKind.ALLOTMENT, ItemID.WATERMELON, 10, 9, 0, 3, ItemID.WATERMELON_SEED, 47),
+	SNAPE_GRASS("Snape grass", PatchKind.ALLOTMENT, ItemID.SNAPE_GRASS, 10, 8, 0, 3, ItemID.SNAPE_GRASS_SEED, 61),
+
+	// Flowers
+	MARIGOLD("Marigold", PatchKind.FLOWER, ItemID.MARIGOLD, 5, 5, 0, 1, ItemID.MARIGOLD_SEED, 2),
+	ROSEMARY("Rosemary", PatchKind.FLOWER, ItemID.ROSEMARY, 5, 5, 0, 1, ItemID.ROSEMARY_SEED, 11),
+	NASTURTIUM("Nasturtium", PatchKind.FLOWER, ItemID.NASTURTIUM, 5, 5, 0, 1, ItemID.NASTURTIUM_SEED, 24),
+	WOAD("Woad", PatchKind.FLOWER, ItemID.WOADLEAF, 5, 5, 0, 1, ItemID.WOAD_SEED, 25),
+	LIMPWURT("Limpwurt", PatchKind.FLOWER, ItemID.LIMPWURT_ROOT, 5, 5, 0, 1, ItemID.LIMPWURT_SEED, 26),
+	WHITE_LILY("White lily", PatchKind.FLOWER, ItemID.WHITELILLY, 5, 5, 0, 1, ItemID.WHITE_LILY_SEED, 58),
+
+	// Hops (levels are not used by Autopilot; Varlamore's three are left at 1)
+	BARLEY("Barley", PatchKind.HOPS, ItemID.BARLEY, 10, 5, 0, 3, ItemID.BARLEY_SEED, 3),
+	HAMMERSTONE("Hammerstone", PatchKind.HOPS, ItemID.HAMMERSTONE_HOPS, 10, 5, 0, 3, ItemID.HAMMERSTONE_HOP_SEED, 4),
+	ASGARNIAN("Asgarnian", PatchKind.HOPS, ItemID.ASGARNIAN_HOPS, 10, 6, 0, 3, ItemID.ASGARNIAN_HOP_SEED, 8),
+	JUTE("Jute", PatchKind.HOPS, ItemID.JUTE_FIBRE, 10, 6, 0, 3, ItemID.JUTE_SEED, 13),
+	YANILLIAN("Yanillian", PatchKind.HOPS, ItemID.YANILLIAN_HOPS, 10, 7, 0, 3, ItemID.YANILLIAN_HOP_SEED, 16),
+	FLAX("Flax", PatchKind.HOPS, ItemID.FLAX, 20, 4, 0, 3, ItemID.FLAX_SEED, 1),
+	KRANDORIAN("Krandorian", PatchKind.HOPS, ItemID.KRANDORIAN_HOPS, 10, 8, 0, 3, ItemID.KRANDORIAN_HOP_SEED, 21),
+	WILDBLOOD("Wildblood", PatchKind.HOPS, ItemID.WILDBLOOD_HOPS, 10, 9, 0, 3, ItemID.WILDBLOOD_HOP_SEED, 28),
+	HEMP("Hemp", PatchKind.HOPS, ItemID.HEMP, 20, 5, 0, 3, ItemID.HEMP_SEED, 1),
+	COTTON("Cotton", PatchKind.HOPS, ItemID.COTTON_BOLL, 20, 6, 0, 3, ItemID.COTTON_SEED, 1),
+
+	// Herbs
+	GUAM("Guam", PatchKind.HERB, ItemID.GUAM_LEAF, 20, 5, 0, 3, ItemID.GUAM_SEED, 9),
+	MARRENTILL("Marrentill", PatchKind.HERB, ItemID.MARENTILL, 20, 5, 0, 3, ItemID.MARRENTILL_SEED, 14),
+	TARROMIN("Tarromin", PatchKind.HERB, ItemID.TARROMIN, 20, 5, 0, 3, ItemID.TARROMIN_SEED, 19),
+	HARRALANDER("Harralander", PatchKind.HERB, ItemID.HARRALANDER, 20, 5, 0, 3, ItemID.HARRALANDER_SEED, 26),
+	RANARR("Ranarr", PatchKind.HERB, ItemID.RANARR_WEED, 20, 5, 0, 3, ItemID.RANARR_SEED, 32),
+	TOADFLAX("Toadflax", PatchKind.HERB, ItemID.TOADFLAX, 20, 5, 0, 3, ItemID.TOADFLAX_SEED, 38),
+	IRIT("Irit", PatchKind.HERB, ItemID.IRIT_LEAF, 20, 5, 0, 3, ItemID.IRIT_SEED, 44),
+	AVANTOE("Avantoe", PatchKind.HERB, ItemID.AVANTOE, 20, 5, 0, 3, ItemID.AVANTOE_SEED, 50),
+	KWUARM("Kwuarm", PatchKind.HERB, ItemID.KWUARM, 20, 5, 0, 3, ItemID.KWUARM_SEED, 56),
+	HUASCA("Huasca", PatchKind.HERB, ItemID.HUASCA, 20, 5, 0, 3, ItemID.HUASCA_SEED, 58),
+	SNAPDRAGON("Snapdragon", PatchKind.HERB, ItemID.SNAPDRAGON, 20, 5, 0, 3, ItemID.SNAPDRAGON_SEED, 62),
+	CADANTINE("Cadantine", PatchKind.HERB, ItemID.CADANTINE, 20, 5, 0, 3, ItemID.CADANTINE_SEED, 67),
+	LANTADYME("Lantadyme", PatchKind.HERB, ItemID.LANTADYME, 20, 5, 0, 3, ItemID.LANTADYME_SEED, 73),
+	DWARF_WEED("Dwarf weed", PatchKind.HERB, ItemID.DWARF_WEED, 20, 5, 0, 3, ItemID.DWARF_WEED_SEED, 79),
+	TORSTOL("Torstol", PatchKind.HERB, ItemID.TORSTOL, 20, 5, 0, 3, ItemID.TORSTOL_SEED, 85),
+	GOUTWEED("Goutweed", PatchKind.HERB, ItemID.EADGAR_GOUTWEED_HERB, 20, 5, 0, 2, -1, 29),
+	/** Diseased or dead herbs, where the game no longer says which herb it was. */
+	ANYHERB("Herb", PatchKind.HERB, ItemID.GUAM_LEAF, 20, 5, 0, 3, -1, 9),
 
 	// Bushes
 	REDBERRIES("Redberry", PatchKind.BUSH, ItemID.REDBERRIES, 20, 6, 20, 5, ItemID.REDBERRY_BUSH_SEED, 10, ItemID.SACK_CABBAGE_10, 4),

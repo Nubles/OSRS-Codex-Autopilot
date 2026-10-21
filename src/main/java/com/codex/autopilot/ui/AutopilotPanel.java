@@ -1,5 +1,6 @@
 package com.codex.autopilot.ui;
 
+import com.codex.autopilot.core.Budget;
 import com.codex.autopilot.core.Candidate;
 import com.codex.autopilot.core.Plan;
 import com.codex.autopilot.core.Tier;
@@ -118,6 +119,10 @@ public class AutopilotPanel extends PluginPanel
 
 		Plan p = view.plan;
 		Candidate top = p.top();
+		if (!view.steppingAside())
+		{
+			list.add(budgetBar());
+		}
 		if (view.steppingAside())
 		{
 			list.add(new SectionHeader("Stepping aside"));
@@ -134,8 +139,17 @@ public class AutopilotPanel extends PluginPanel
 			list.add(new SectionHeader("Do this now"));
 			list.add(caughtUp());
 		}
+		else if (view.budgeted() && !view.fit.isEmpty())
+		{
+			budgeted(list);
+		}
 		else
 		{
+			if (view.budgeted())
+			{
+				list.add(note("Nothing fits in " + view.budget + ": the quickest step takes ~" + view.fit.getShortest()
+					+ " min. Here is the best one anyway."));
+			}
 			list.add(new SectionHeader("Do this now", top.getTier() == Tier.WASTING && top.getDeadline() > 0 ? "before it's lost" : null));
 			list.add(StepCard.lead(top, actions, WIDTH - 30, false));
 			List<Candidate> after = p.after(AFTER);
@@ -159,6 +173,50 @@ public class AutopilotPanel extends PluginPanel
 		}
 		sources(list);
 		return list;
+	}
+
+	/** The steps that fit the time the player has, in the order to do them. */
+	private void budgeted(StackPanel list)
+	{
+		Budget.Fit fit = view.fit;
+		List<Candidate> steps = fit.getSteps();
+		Candidate first = steps.get(0);
+		list.add(new SectionHeader("In your " + view.budget, "~" + fit.getTotal() + " min"));
+		list.add(StepCard.lead(first, actions, WIDTH - 30, false));
+		if (steps.size() > 1)
+		{
+			list.space(2);
+			list.add(new SectionHeader("Then", steps.size() - 1 == 1 ? "1 more" : steps.size() - 1 + " more"));
+			for (int i = 1; i < steps.size(); i++)
+			{
+				list.add(StepCard.row(i + 1, steps.get(i), actions, WIDTH - 30));
+			}
+		}
+		if (fit.getLeft() > 0)
+		{
+			list.space(2);
+			list.add(note((fit.getLeft() == 1 ? "1 more step waits" : fit.getLeft() + " more steps wait") + " for when you have longer."));
+		}
+	}
+
+	/** "I have 15 / 30 / 60 / Any": what the plan has to fit in. */
+	private JComponent budgetBar()
+	{
+		JPanel bar = new JPanel(new BorderLayout(6, 0));
+		bar.setOpaque(false);
+		javax.swing.JLabel label = new javax.swing.JLabel("I have");
+		label.setFont(Theme.small());
+		label.setForeground(Theme.GOLD);
+		bar.add(label, BorderLayout.WEST);
+		JPanel buttons = new JPanel(new GridLayout(1, 0, 4, 0));
+		buttons.setOpaque(false);
+		for (Budget b : new Budget[]{Budget.MIN_15, Budget.MIN_30, Budget.MIN_60, Budget.NONE})
+		{
+			String text = b == Budget.NONE ? "Any" : b.getMinutes() + "m";
+			buttons.add(new CodexButton(text, b == view.budget, 18, () -> actions.budget(b)));
+		}
+		bar.add(buttons, BorderLayout.CENTER);
+		return bar;
 	}
 
 	private JComponent aside()

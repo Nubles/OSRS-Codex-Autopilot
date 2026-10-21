@@ -4,6 +4,7 @@ import com.codex.autopilot.core.Bring;
 import com.codex.autopilot.core.Candidate;
 import com.codex.autopilot.ui.Glyph;
 import com.codex.autopilot.ui.Sigil;
+import com.codex.autopilot.ui.StepCard;
 import com.codex.autopilot.ui.Theme;
 import com.codex.autopilot.ui.Ui;
 import java.awt.Color;
@@ -67,13 +68,14 @@ public class StepPlaque extends Overlay
 		int icon = 18;
 		int textX = PAD + 4 + icon + 8;
 		String over = "NEXT: " + c.getOver().toUpperCase();
-		String time = c.getMinutes() >= 60 ? "~1 hr" : "~" + c.getMinutes() + " min";
+		String note = StepCard.paceNote(c);
+		String time = StepCard.minutes(c) + (note == null ? "" : " (" + note + ")");
 		int want = textX + Math.max(bold.stringWidth(c.getTitle()), Math.max(small.stringWidth(c.getWhy()) / 2 + 20,
 			small.stringWidth(over) + small.stringWidth(time) + 12)) + PAD;
 		int width = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, want));
 		int room = width - textX - PAD;
 		String[] titleLines = wrap(c.getTitle(), bold, room, 2);
-		String[] why = wrap(c.getWhy(), small, room, 2);
+		String[] why = wrap(c.getWhy(), small, room, 3);
 		String[] bring = wrap(c.getBring(), small, room, 2);
 		int height = PAD + small.getHeight() + titleLines.length * bold.getHeight() + why.length * small.getHeight()
 			+ bring.length * small.getHeight() + 8;

@@ -1,5 +1,6 @@
 package com.codex.autopilot;
 
+import com.codex.autopilot.core.Budget;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
@@ -20,6 +21,12 @@ public interface CodexAutopilotConfig extends Config
 
 	@ConfigSection(name = "Priorities", description = "How steps are put in order", position = 2)
 	String PRIORITIES = "priorities";
+
+	@ConfigSection(name = "Notifications", description = "Heads-up notifications through RuneLite's notifier", position = 3)
+	String NOTIFICATIONS = "notifications";
+
+	/** The time budget the panel's selector sets. */
+	String BUDGET_KEY = "timeBudget";
 
 	@ConfigItem(
 		keyName = "plaque",
@@ -58,6 +65,19 @@ public interface CodexAutopilotConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = BUDGET_KEY,
+		name = "Time budget",
+		description = "Plan only what fits in this long: the panel and plaque show the best set of steps for the time, things going to waste first."
+			+ " Also set from the top of the panel",
+		section = DISPLAY,
+		position = 3
+	)
+	default Budget timeBudget()
+	{
+		return Budget.NONE;
+	}
+
+	@ConfigItem(
 		keyName = "chores",
 		name = "Bird houses and patches",
 		description = "Read bird houses, seaweed, special trees and special patches from RuneLite's Time Tracking plugin",
@@ -70,11 +90,35 @@ public interface CodexAutopilotConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "herbs",
+		name = "Herb runs",
+		description = "Read herb patches from RuneLite's Time Tracking plugin, with the allotments and flower patches beside them",
+		section = SOURCES,
+		position = 1
+	)
+	default boolean herbs()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "hops",
+		name = "Hops runs",
+		description = "Read hops patches from RuneLite's Time Tracking plugin",
+		section = SOURCES,
+		position = 2
+	)
+	default boolean hops()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 		keyName = "dailies",
 		name = "Diary dailies",
 		description = "Battlestaves, essence, flax, sand and the other diary dailies, and finished farming contracts",
 		section = SOURCES,
-		position = 1
+		position = 3
 	)
 	default boolean dailies()
 	{
@@ -86,7 +130,7 @@ public interface CodexAutopilotConfig extends Config
 		name = "Kingdom of Miscellania",
 		description = "Read approval and the coffer from RuneLite's Kingdom of Miscellania plugin",
 		section = SOURCES,
-		position = 2
+		position = 4
 	)
 	default boolean kingdom()
 	{
@@ -98,7 +142,7 @@ public interface CodexAutopilotConfig extends Config
 		name = "Codex Navigator goals",
 		description = "Add the next step toward the goals you pinned in Codex Navigator",
 		section = SOURCES,
-		position = 3
+		position = 5
 	)
 	default boolean navigator()
 	{
@@ -110,7 +154,7 @@ public interface CodexAutopilotConfig extends Config
 		name = "Codex Bank Steward bank",
 		description = "Check what a chore needs against the bank Codex Bank Steward last saw",
 		section = SOURCES,
-		position = 4
+		position = 6
 	)
 	default boolean bankSteward()
 	{
@@ -168,5 +212,54 @@ public interface CodexAutopilotConfig extends Config
 	default int cofferSlack()
 	{
 		return 150_000;
+	}
+
+	@ConfigItem(
+		keyName = "learnPace",
+		name = "Learn my pace",
+		description = "Time your bird house, herb and other chore runs and show your own pace once three runs of a kind are timed."
+			+ " Kept in this plugin's settings for the account; switch off to go back to the estimates",
+		section = PRIORITIES,
+		position = 4
+	)
+	default boolean learnPace()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "notify",
+		name = "Notifications",
+		description = "Send heads-up notifications through RuneLite's notifier, which has its own settings for when and how they show",
+		section = NOTIFICATIONS,
+		position = 0
+	)
+	default boolean notifications()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "notifyWaste",
+		name = "Going to waste",
+		description = "Notify once when something starts going to waste: a diseased patch, dailies before the reset, the kingdom",
+		section = NOTIFICATIONS,
+		position = 1
+	)
+	default boolean notifyWaste()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "notifyReady",
+		name = "Chores ready",
+		description = "Notify once when a chore trip becomes ready, such as full bird houses or a herb run",
+		section = NOTIFICATIONS,
+		position = 2
+	)
+	default boolean notifyReady()
+	{
+		return true;
 	}
 }

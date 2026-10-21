@@ -132,7 +132,7 @@ public class AutopilotCoreTest
 		assertEquals("15008." + VarbitID.FARMING_TRANSMIT_A, Spot.SEAWEED_N.timeTrackingKey());
 		assertEquals("4922." + VarbitID.FARMING_TRANSMIT_I, Spot.REDWOOD_GUILD.timeTrackingKey());
 		assertEquals("5423." + VarbitID.FARMING_TRANSMIT_A, Spot.CALQUAT_KASTORI.timeTrackingKey());
-		assertEquals(34, Spot.values().length);
+		assertEquals(75, Spot.values().length);
 	}
 
 	@Test
