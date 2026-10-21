@@ -3,13 +3,18 @@ package com.codex.autopilot;
 import com.codex.autopilot.core.Activity;
 import com.codex.autopilot.core.Advisor;
 import com.codex.autopilot.core.BankSnapshot;
+import com.codex.autopilot.core.Budget;
 import com.codex.autopilot.core.Candidate;
 import com.codex.autopilot.core.Dailies;
 import com.codex.autopilot.core.DailyState;
 import com.codex.autopilot.core.Format;
 import com.codex.autopilot.core.GoalBoard;
+import com.codex.autopilot.core.Heads;
+import com.codex.autopilot.core.Pace;
+import com.codex.autopilot.core.PaceWatch;
 import com.codex.autopilot.core.Plan;
 import com.codex.autopilot.core.Profile;
+import com.codex.autopilot.core.Ranker;
 import com.codex.autopilot.core.Session;
 import com.codex.autopilot.core.Settings;
 import com.codex.autopilot.core.Tier;
@@ -23,8 +28,11 @@ import com.google.gson.Gson;
 import com.google.inject.Provides;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
 import net.runelite.api.Client;
@@ -36,6 +44,7 @@ import net.runelite.api.QuestState;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
+import net.runelite.client.Notifier;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -51,8 +60,10 @@ import net.runelite.client.ui.overlay.OverlayManager;
  * One next step for the whole account. Autopilot reads what RuneLite and the other Codex plugins
  * already know (Time Tracking's patches and bird houses, the Kingdom of Miscellania, the diary
  * dailies, Codex Navigator's goals and Codex Bank Steward's bank), ranks it all by what is lost
- * by waiting, and keeps the best step on a plaque and in its panel. It only reads: it never
- * clicks, changes menus, writes another plugin's data or sends anything anywhere.
+ * by waiting, and keeps the best step on a plaque and in its panel. It never clicks, changes
+ * menus, writes another plugin's data or sends anything off the computer; the only things it
+ * keeps are its own settings, among them the player's learned pace, and the only thing it sends
+ * is a notification through RuneLite's own notifier.
  */
 @PluginDescriptor(
 	name = "Codex Autopilot",
@@ -68,6 +79,10 @@ public class CodexAutopilotPlugin extends Plugin
 	private static final int CONTRACTOR_RANGE = 12;
 	/** The RuneLite config key that says whether Codex Minigame Pilot is switched on. */
 	private static final String MINIGAME_PILOT_KEY = "codexminigamepilotplugin";
+	/** The RuneLite config key that says whether Codex Rounds is switched on. */
+	private static final String ROUNDS_KEY = "codexroundsplugin";
+	/** Settings that make chore steps come or go: a run in progress is dropped rather than timed when one changes. */
+	private static final Set<String> CHORE_KEYS = new HashSet<>(Arrays.asList("chores", "herbs", "hops", "learnPace"));
 	private static final String TIME_TRACKING = "timetracking";
 
 	@Inject
@@ -91,8 +106,13 @@ public class CodexAutopilotPlugin extends Plugin
 	@Inject
 	private CodexAutopilotConfig config;
 
+	@Inject
+	private Notifier notifier;
+
 	private final StepPlaque plaque = new StepPlaque();
 	private final Session session = new Session();
+	private final Heads heads = new Heads();
+	private final PaceWatch watch = new PaceWatch();
 
 	private AutopilotPanel panel;
 	private NavigationButton navButton;
@@ -108,6 +128,8 @@ public class CodexAutopilotPlugin extends Plugin
 	private GoalBoard board;
 	private String bankJson;
 	private BankSnapshot bank;
+	private String paceJson;
+	private Pace pace;
 
 	@Provides
 	CodexAutopilotConfig provideConfig(ConfigManager configManager)
@@ -145,6 +167,8 @@ public class CodexAutopilotPlugin extends Plugin
 		plaque.show(null);
 		panel = null;
 		session.clear();
+		heads.reset();
+		watch.abandon();
 		skipped = false;
 		dailies = null;
 		activity = Activity.NONE;
@@ -152,6 +176,8 @@ public class CodexAutopilotPlugin extends Plugin
 		board = null;
 		bankJson = null;
 		bank = null;
+		paceJson = null;
+		pace = null;
 	}
 
 	// ---- Events ----
@@ -175,11 +201,15 @@ public class CodexAutopilotPlugin extends Plugin
 		{
 			dailies = null;
 			activity = Activity.NONE;
+			// Out of sight: a run in progress cannot be timed across it.
+			watch.abandon();
 			evaluate();
 		}
 		else if (event.getGameState() == GameState.LOGGED_IN)
 		{
 			ticks = 0;
+			// What is already ready at login is old news: the first look after it only takes note.
+			heads.reset();
 			clientThread.invokeLater(() ->
 			{
 				readLive(true);
@@ -191,17 +221,34 @@ public class CodexAutopilotPlugin extends Plugin
 	@Subscribe
 	public void onRuneScapeProfileChanged(RuneScapeProfileChanged event)
 	{
-		// Another account: what was set aside belonged to the last one.
+		// Another account: what was set aside, told or timed belonged to the last one.
 		session.clear();
+		heads.reset();
+		watch.abandon();
 		skipped = false;
 		dailies = null;
-		clientThread.invokeLater(this::evaluate);
+		clientThread.invokeLater(() ->
+		{
+			// Its learned pace is read afresh, never carried over from the last account.
+			pace = null;
+			paceJson = null;
+			evaluate();
+		});
 	}
 
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
 		String group = event.getGroup();
+		if (CodexAutopilotConfig.GROUP.equals(group) && CHORE_KEYS.contains(event.getKey()))
+		{
+			watch.abandon();
+		}
+		if (CodexAutopilotConfig.GROUP.equals(group) && Pace.KEY.equals(event.getKey()))
+		{
+			// Autopilot's own save of the pace; nothing new to show.
+			return;
+		}
 		if (CodexAutopilotConfig.GROUP.equals(group) || TIME_TRACKING.equals(group) || GoalBoard.GROUP.equals(group)
 			|| BankSnapshot.GROUP.equals(group) || "kingdomofmiscellania".equals(group))
 		{
@@ -270,6 +317,9 @@ public class CodexAutopilotPlugin extends Plugin
 	{
 		return Settings.defaults()
 			.chores(config.chores())
+			.herbs(config.herbs())
+			.hops(config.hops())
+			.rounds("true".equals(configManager.getConfiguration("runelite", ROUNDS_KEY)))
 			.dailies(config.dailies())
 			.kingdom(config.kingdom())
 			.navigator(config.navigator())
@@ -292,19 +342,32 @@ public class CodexAutopilotPlugin extends Plugin
 
 		Advisor.Inputs in = new Advisor.Inputs();
 		Plan plan = Plan.EMPTY;
+		List<Candidate> all = new ArrayList<>();
 		String nextUp = null;
+		boolean learn = config.learnPace();
 		if (known)
 		{
 			in = Advisor.Inputs.read(new OnlyCore(profile), gson, now, royalTrouble);
 			in.board = board(profile);
 			in.bank = bank(profile);
+			in.pace = learn ? pace(profile) : null;
 			in.dailies = loggedIn ? dailies : null;
-			plan = Advisor.plan(in, s, session, now);
+			all = Advisor.candidates(in, s, now);
+			plan = Ranker.rank(all, s, session, now);
 			nextUp = Advisor.nextUp(in, s, now);
 		}
 
+		Budget budget = config.timeBudget() == null ? Budget.NONE : config.timeBudget();
+		Budget.Fit fit = Budget.fit(plan, budget.getMinutes(), session);
+		Candidate top = budget == Budget.NONE || fit.isEmpty() ? plan.top() : fit.first();
+
+		if (known && loggedIn)
+		{
+			learn(all, top, now, learn);
+			announce(all, plan, now);
+		}
+
 		boolean aside = config.stepAside() && activity != Activity.NONE;
-		Candidate top = plan.top();
 		plaque.show(config.plaque() && loggedIn && !aside ? top : null);
 
 		AutopilotPanel p = panel;
@@ -314,8 +377,57 @@ public class CodexAutopilotPlugin extends Plugin
 		}
 		View view = new View(loggedIn, known, plan, config.stepAside() ? activity : Activity.NONE,
 			"true".equals(configManager.getConfiguration("runelite", MINIGAME_PILOT_KEY)), nextUp, s.isQuiet(), skipped,
-			sources(in, s, plan, loggedIn, now));
+			sources(in, s, plan, loggedIn, now), budget, fit);
 		SwingUtilities.invokeLater(() -> p.update(view));
+	}
+
+	/** Times the run being worked and keeps what it learns in Autopilot's own profile settings. On the client thread. */
+	private void learn(List<Candidate> all, Candidate top, long now, boolean on)
+	{
+		if (!on || pace == null)
+		{
+			watch.abandon();
+			return;
+		}
+		List<PaceWatch.Sample> done = watch.observe(all, top == null ? null : top.getKey(), now);
+		boolean changed = false;
+		for (PaceWatch.Sample sample : done)
+		{
+			changed |= pace.add(sample.kind, sample.minutesPerStop);
+		}
+		if (changed)
+		{
+			String json = pace.toJson(gson);
+			paceJson = json;
+			configManager.setRSProfileConfiguration(CodexAutopilotConfig.GROUP, Pace.KEY, json);
+		}
+	}
+
+	/** Sends what is new through RuneLite's notifier, once per change. On the client thread. */
+	private void announce(List<Candidate> all, Plan plan, long now)
+	{
+		Set<String> visible = new HashSet<>();
+		for (Candidate c : plan.getSteps())
+		{
+			visible.add(c.getKey());
+		}
+		boolean on = config.notifications();
+		// Watched even with notifications off, so switching them on later does not announce old news.
+		for (Heads.Notice n : heads.observe(all, visible, now, on && config.notifyWaste(), on && config.notifyReady()))
+		{
+			notifier.notify(n.text);
+		}
+	}
+
+	private Pace pace(Profile profile)
+	{
+		String json = Profile.safe(profile, CodexAutopilotConfig.GROUP, Pace.KEY);
+		if (pace == null || !Objects.equals(json, paceJson))
+		{
+			paceJson = json;
+			pace = Pace.parse(gson, json);
+		}
+		return pace;
 	}
 
 	private GoalBoard board(Profile profile)
@@ -386,7 +498,8 @@ public class CodexAutopilotPlugin extends Plugin
 		@Override
 		public String get(String group, String key)
 		{
-			return GoalBoard.GROUP.equals(group) || BankSnapshot.GROUP.equals(group) ? null : inner.get(group, key);
+			return GoalBoard.GROUP.equals(group) || BankSnapshot.GROUP.equals(group) || CodexAutopilotConfig.GROUP.equals(group)
+				? null : inner.get(group, key);
 		}
 	}
 
@@ -405,6 +518,12 @@ public class CodexAutopilotPlugin extends Plugin
 		{
 			session.snooze(key, Instant.now().getEpochSecond());
 			clientThread.invokeLater(CodexAutopilotPlugin.this::evaluate);
+		}
+
+		@Override
+		public void budget(Budget budget)
+		{
+			configManager.setConfiguration(CodexAutopilotConfig.GROUP, CodexAutopilotConfig.BUDGET_KEY, budget);
 		}
 
 		@Override

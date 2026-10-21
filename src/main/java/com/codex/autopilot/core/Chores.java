@@ -99,6 +99,12 @@ public final class Chores
 		Reading next = null;
 		for (Reading r : readings.values())
 		{
+			Spot.Group g = r.getSpot().getGroup();
+			if (g == Spot.Group.ALLOTMENTS || g == Spot.Group.FLOWERS)
+			{
+				// They ride along on the herb run; a flower ready in 3 min is not worth a line of its own.
+				continue;
+			}
 			if (r.getStatus() == Status.GROWING && r.getReadyAt() > now && (next == null || r.getReadyAt() < next.getReadyAt()))
 			{
 				next = r;
@@ -120,7 +126,19 @@ public final class Chores
 		{
 			return Candidate.Kind.BIRDHOUSE_RUN;
 		}
-		return s.getGroup() == Spot.Group.PATCHES ? Candidate.Kind.PATCH_RUN : Candidate.Kind.TREE_RUN;
+		switch (s.getGroup())
+		{
+			case PATCHES:
+				return Candidate.Kind.PATCH_RUN;
+			case HERBS:
+			case ALLOTMENTS:
+			case FLOWERS:
+				return Candidate.Kind.HERB_RUN;
+			case HOPS:
+				return Candidate.Kind.HOPS_RUN;
+			default:
+				return Candidate.Kind.TREE_RUN;
+		}
 	}
 
 	/** Minutes a chore takes to come round again, so an hour idle can be weighed as a share of it. */
@@ -145,6 +163,13 @@ public final class Chores
 				return 320 * 11;
 			case TREES:
 				return 160 * 7;
+			case HERBS:
+				return 80;
+			case ALLOTMENTS:
+			case HOPS:
+				return 60;
+			case FLOWERS:
+				return 20;
 			default:
 				return 80 * 7;
 		}
@@ -199,7 +224,19 @@ public final class Chores
 		List<Candidate> out = new ArrayList<>();
 		for (Map.Entry<Candidate.Kind, List<Reading>> e : ready.entrySet())
 		{
-			out.add(step(e.getKey(), e.getValue(), soon.getOrDefault(e.getKey(), new ArrayList<>()), bank, now, offset));
+			List<Reading> near = soon.getOrDefault(e.getKey(), new ArrayList<>());
+			if (e.getKey() == Candidate.Kind.HERB_RUN || e.getKey() == Candidate.Kind.HOPS_RUN)
+			{
+				Candidate c = HerbRun.step(e.getKey(), e.getValue(), near, bank, now, offset);
+				if (c != null)
+				{
+					out.add(c);
+				}
+			}
+			else
+			{
+				out.add(step(e.getKey(), e.getValue(), near, bank, now, offset));
+			}
 		}
 		return out;
 	}

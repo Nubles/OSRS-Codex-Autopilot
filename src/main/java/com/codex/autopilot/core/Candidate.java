@@ -17,6 +17,8 @@ public final class Candidate
 		BIRDHOUSE_RUN("Birdhouse run"),
 		TREE_RUN("Tree run"),
 		PATCH_RUN("Special patches"),
+		HERB_RUN("Herb run"),
+		HOPS_RUN("Hops run"),
 		DAILIES("Diary dailies"),
 		CONTRACT("Farming contract"),
 		KINGDOM("Kingdom of Miscellania"),
@@ -34,6 +36,12 @@ public final class Candidate
 		{
 			return label;
 		}
+
+		/** A timed farming or Fossil Island trip, the kind Codex Rounds routes. */
+		public boolean isChore()
+		{
+			return this == BIRDHOUSE_RUN || this == TREE_RUN || this == PATCH_RUN || this == HERB_RUN || this == HOPS_RUN;
+		}
 	}
 
 	private final String key;
@@ -48,9 +56,16 @@ public final class Candidate
 	private final long deadline;
 	private final int count;
 	private final int itemId;
+	private final boolean paced;
 
 	public Candidate(String key, Kind kind, Tier tier, String over, String title, String why, String bring,
 		int minutes, double urgency, long deadline, int count, int itemId)
+	{
+		this(key, kind, tier, over, title, why, bring, minutes, urgency, deadline, count, itemId, false);
+	}
+
+	private Candidate(String key, Kind kind, Tier tier, String over, String title, String why, String bring,
+		int minutes, double urgency, long deadline, int count, int itemId, boolean paced)
 	{
 		this.key = key;
 		this.kind = kind;
@@ -64,6 +79,20 @@ public final class Candidate
 		this.deadline = Math.max(0, deadline);
 		this.count = count;
 		this.itemId = itemId;
+		this.paced = paced;
+	}
+
+	/** The same step taking the player's own learned time instead of the estimate. */
+	public Candidate withPace(int minutes)
+	{
+		return new Candidate(key, kind, tier, over, title, why, bring, minutes, urgency, deadline, count, itemId, true);
+	}
+
+	/** The same step with a note added to its why line. */
+	public Candidate withNote(String note)
+	{
+		String w = why == null || why.isEmpty() ? note : why + "; " + note;
+		return new Candidate(key, kind, tier, over, title, w, bring, minutes, urgency, deadline, count, itemId, paced);
 	}
 
 	/** Stable for the session, so Skip and Snooze stick to the same chore or goal. */
@@ -112,6 +141,12 @@ public final class Candidate
 		return minutes;
 	}
 
+	/** True when the minutes are the player's own pace, learned from their runs, rather than an estimate. */
+	public boolean isPaced()
+	{
+		return paced;
+	}
+
 	public double getUrgency()
 	{
 		return urgency;
@@ -155,7 +190,7 @@ public final class Candidate
 			return false;
 		}
 		Candidate c = (Candidate) o;
-		return key.equals(c.key) && tier == c.tier && minutes == c.minutes && deadline == c.deadline && count == c.count
+		return key.equals(c.key) && tier == c.tier && minutes == c.minutes && paced == c.paced && deadline == c.deadline && count == c.count
 			&& Objects.equals(title, c.title) && Objects.equals(why, c.why) && Objects.equals(bring, c.bring);
 	}
 

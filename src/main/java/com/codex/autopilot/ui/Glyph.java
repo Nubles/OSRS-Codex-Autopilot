@@ -14,8 +14,8 @@ import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
 
 /**
- * A small engraved mark for each kind of step: a bird house, a tree, a sprout, an hourglass, a
- * scroll, a crown, a star and a flag. Drawn rather than taken from item sprites, so it reads the
+ * A small engraved mark for each kind of step: a bird house, a tree, a sprout, a herb sprig, a hop
+ * cone, an hourglass, a scroll, a crown, a star and a flag. Drawn rather than taken from item sprites, so it reads the
  * same at any size and in the game view.
  */
 public final class Glyph
@@ -76,6 +76,29 @@ public final class Glyph
 				a.add(new Area(leaf(8, 7.5f, 1)));
 				a.add(new Area(new Rectangle2D.Float(7.3f, 7f, 1.4f, 6f)));
 				a.add(new Area(new Ellipse2D.Float(3.5f, 12.2f, 9, 3)));
+				return a;
+			}
+			case HERB_RUN:
+			{
+				// A sprig: three leaves on a stem.
+				Area a = new Area(new Rectangle2D.Float(7.4f, 6f, 1.2f, 9f));
+				a.add(new Area(leaf(8, 7.5f, -1)));
+				a.add(new Area(leaf(8, 7.5f, 1)));
+				Path2D top = new Path2D.Float();
+				top.moveTo(8, 7);
+				top.quadTo(4.6, 3.6, 8, 0.8);
+				top.quadTo(11.4, 3.6, 8, 7);
+				top.closePath();
+				a.add(new Area(top));
+				a.add(new Area(leaf(8, 12.5f, -1)));
+				return a;
+			}
+			case HOPS_RUN:
+			{
+				// A hop cone hanging from its bine.
+				Area a = new Area(new Ellipse2D.Float(4f, 3.5f, 8f, 11.5f));
+				a.add(new Area(new Rectangle2D.Float(7.4f, 0.8f, 1.2f, 3.5f)));
+				a.add(new Area(leaf(8.6f, 3f, 1)));
 				return a;
 			}
 			case DAILIES:
@@ -157,6 +180,17 @@ public final class Glyph
 			case KINGDOM:
 				g.setColor(Theme.mix(Theme.TEAL, Color.WHITE, 0.3));
 				g.fill(new Ellipse2D.Float(7, 9.2f, 2, 2));
+				break;
+			case HOPS_RUN:
+				// The overlapping bracts.
+				Path2D bracts = new Path2D.Float();
+				bracts.moveTo(5, 7.5);
+				bracts.quadTo(8, 9.5, 11, 7.5);
+				bracts.moveTo(4.6, 10.5);
+				bracts.quadTo(8, 12.5, 11.4, 10.5);
+				bracts.moveTo(6, 13.4);
+				bracts.quadTo(8, 14.6, 10, 13.4);
+				g.draw(bracts);
 				break;
 			default:
 				break;

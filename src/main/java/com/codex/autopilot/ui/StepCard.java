@@ -86,10 +86,20 @@ public final class StepCard
 	}
 
 	/** "~11 min", or "1 hr" for the long ones. */
-	static String minutes(Candidate c)
+	public static String minutes(Candidate c)
 	{
 		int m = c.getMinutes();
 		return m >= 60 ? "~1 hr" : "~" + m + " min";
+	}
+
+	/** "your pace" when the time was learned from the player's runs, "estimate" for a chore not yet learned, else null. */
+	public static String paceNote(Candidate c)
+	{
+		if (c.isPaced())
+		{
+			return "your pace";
+		}
+		return c.getKind().isChore() ? "estimate" : null;
 	}
 
 	/** The lead step's head: the mark in its medallion, what kind of step, its tier and how long. */
@@ -139,7 +149,14 @@ public final class StepCard
 
 			int room = px - tx - 6;
 			Ui.shadowed(g, Ui.clip(c.getOver().toUpperCase(), small, room), tx, 14, Theme.GOLD);
-			Ui.shadowed(g, Ui.clip(c.getTier().getLabel(), small, w - tx), tx, 29, tint);
+			String note = paceNote(c);
+			int noteW = 0;
+			if (note != null)
+			{
+				noteW = small.stringWidth(note);
+				Ui.shadowed(g, note, w - noteW - 1, 29, c.isPaced() ? Theme.TEAL : Theme.TEXT_FAINT);
+			}
+			Ui.shadowed(g, Ui.clip(c.getTier().getLabel(), small, w - tx - (noteW > 0 ? noteW + 6 : 0)), tx, 29, tint);
 			g.dispose();
 		}
 	}
@@ -181,7 +198,8 @@ public final class StepCard
 
 			String time = minutes(c);
 			int tw = small.stringWidth(time);
-			Ui.shadowed(g, time, w - tw, 13, Theme.TEXT_FAINT);
+			// Teal when the time is the player's own pace.
+			Ui.shadowed(g, time, w - tw, 13, c.isPaced() ? Theme.alpha(Theme.TEAL, 220) : Theme.TEXT_FAINT);
 			Ui.shadowed(g, Ui.clip(c.getOver().toUpperCase(), small, w - 38 - tw - 6), 38, 13, Theme.GOLD_DIM);
 			g.dispose();
 		}

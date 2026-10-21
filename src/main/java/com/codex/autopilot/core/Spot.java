@@ -5,7 +5,8 @@ import net.runelite.api.gameval.VarPlayerID;
 import net.runelite.api.gameval.VarbitID;
 
 /**
- * Every patch and bird house space Autopilot keeps an eye on, the same set Codex Rounds tends.
+ * Every patch and bird house space Autopilot keeps an eye on: the timed chores Codex Rounds tends,
+ * and the herb, allotment, flower and hops patches of a herb run.
  * RuneLite's Time Tracking plugin saves each one in its "timetracking" profile config under
  * {@code <first region>.<varbit>} (patches) or {@code birdhouse.<varp>} (bird house spaces), as
  * {@code value:unixSecond}. The regions follow RuneLite's FarmingWorld; only the first is used
@@ -53,7 +54,48 @@ public enum Spot
 	BELLADONNA_DRAYNOR("Draynor Manor", Group.PATCHES, PatchKind.BELLADONNA, VarbitID.FARMING_TRANSMIT_A, 12340),
 	BELLADONNA_AUBURNVALE("Auburnvale", Group.PATCHES, PatchKind.BELLADONNA, VarbitID.FARMING_TRANSMIT_B, 5427, 5428, 5684),
 	ANIMA_GUILD("Farming Guild", Group.PATCHES, PatchKind.ANIMA, VarbitID.FARMING_TRANSMIT_M, -1),
-	HESPORI_GUILD("Farming Guild", Group.PATCHES, PatchKind.HESPORI, VarbitID.FARMING_TRANSMIT_J, 5021);
+	HESPORI_GUILD("Farming Guild", Group.PATCHES, PatchKind.HESPORI, VarbitID.FARMING_TRANSMIT_J, 5021),
+	HERB_ARDOUGNE("Ardougne", Group.HERBS, PatchKind.HERB, VarbitID.FARMING_TRANSMIT_D, 10548),
+	HERB_CATHERBY("Catherby", Group.HERBS, PatchKind.HERB, VarbitID.FARMING_TRANSMIT_D, 11062),
+	HERB_FALADOR("Falador", Group.HERBS, PatchKind.HERB, VarbitID.FARMING_TRANSMIT_D, 12083),
+	HERB_HOSIDIUS("Hosidius", Group.HERBS, PatchKind.HERB, VarbitID.FARMING_TRANSMIT_D, 6967),
+	HERB_PORT_PHASMATYS("Port Phasmatys", Group.HERBS, PatchKind.HERB, VarbitID.FARMING_TRANSMIT_D, 14391),
+	HERB_CIVITAS("Civitas illa Fortis", Group.HERBS, PatchKind.HERB, VarbitID.FARMING_TRANSMIT_D, 6192),
+	HERB_GUILD("Farming Guild", Group.HERBS, PatchKind.HERB, VarbitID.FARMING_TRANSMIT_E, -1),
+	HERB_TROLL_STRONGHOLD("Troll Stronghold", Group.HERBS, PatchKind.HERB, VarbitID.FARMING_TRANSMIT_A, 11321),
+	HERB_WEISS("Weiss", Group.HERBS, PatchKind.HERB, VarbitID.FARMING_TRANSMIT_A, 11325),
+	HERB_HARMONY("Harmony Island", Group.HERBS, PatchKind.HERB, VarbitID.FARMING_TRANSMIT_B, 15148),
+	ALLOTMENT_ARDOUGNE_N("Ardougne, north", Group.ALLOTMENTS, PatchKind.ALLOTMENT, VarbitID.FARMING_TRANSMIT_A, 10548),
+	ALLOTMENT_ARDOUGNE_S("Ardougne, south", Group.ALLOTMENTS, PatchKind.ALLOTMENT, VarbitID.FARMING_TRANSMIT_B, 10548),
+	ALLOTMENT_CATHERBY_N("Catherby, north", Group.ALLOTMENTS, PatchKind.ALLOTMENT, VarbitID.FARMING_TRANSMIT_A, 11062),
+	ALLOTMENT_CATHERBY_S("Catherby, south", Group.ALLOTMENTS, PatchKind.ALLOTMENT, VarbitID.FARMING_TRANSMIT_B, 11062),
+	ALLOTMENT_FALADOR_NW("Falador, north-west", Group.ALLOTMENTS, PatchKind.ALLOTMENT, VarbitID.FARMING_TRANSMIT_A, 12083),
+	ALLOTMENT_FALADOR_SE("Falador, south-east", Group.ALLOTMENTS, PatchKind.ALLOTMENT, VarbitID.FARMING_TRANSMIT_B, 12083),
+	ALLOTMENT_HOSIDIUS_NE("Hosidius, north-east", Group.ALLOTMENTS, PatchKind.ALLOTMENT, VarbitID.FARMING_TRANSMIT_A, 6967),
+	ALLOTMENT_HOSIDIUS_SW("Hosidius, south-west", Group.ALLOTMENTS, PatchKind.ALLOTMENT, VarbitID.FARMING_TRANSMIT_B, 6967),
+	ALLOTMENT_PORT_PHASMATYS_NW("Port Phasmatys, north-west", Group.ALLOTMENTS, PatchKind.ALLOTMENT, VarbitID.FARMING_TRANSMIT_A, 14391),
+	ALLOTMENT_PORT_PHASMATYS_SE("Port Phasmatys, south-east", Group.ALLOTMENTS, PatchKind.ALLOTMENT, VarbitID.FARMING_TRANSMIT_B, 14391),
+	ALLOTMENT_CIVITAS_N("Civitas illa Fortis, north", Group.ALLOTMENTS, PatchKind.ALLOTMENT, VarbitID.FARMING_TRANSMIT_A, 6192),
+	ALLOTMENT_CIVITAS_S("Civitas illa Fortis, south", Group.ALLOTMENTS, PatchKind.ALLOTMENT, VarbitID.FARMING_TRANSMIT_B, 6192),
+	ALLOTMENT_GUILD_N("Farming Guild, north", Group.ALLOTMENTS, PatchKind.ALLOTMENT, VarbitID.FARMING_TRANSMIT_C, -1),
+	ALLOTMENT_GUILD_S("Farming Guild, south", Group.ALLOTMENTS, PatchKind.ALLOTMENT, VarbitID.FARMING_TRANSMIT_D, -1),
+	ALLOTMENT_PRIF_N("Prifddinas, north", Group.ALLOTMENTS, PatchKind.ALLOTMENT, VarbitID.FARMING_TRANSMIT_A, 13151),
+	ALLOTMENT_PRIF_S("Prifddinas, south", Group.ALLOTMENTS, PatchKind.ALLOTMENT, VarbitID.FARMING_TRANSMIT_B, 13151),
+	ALLOTMENT_HARMONY("Harmony Island", Group.ALLOTMENTS, PatchKind.ALLOTMENT, VarbitID.FARMING_TRANSMIT_A, 15148),
+	FLOWER_ARDOUGNE("Ardougne", Group.FLOWERS, PatchKind.FLOWER, VarbitID.FARMING_TRANSMIT_C, 10548),
+	FLOWER_CATHERBY("Catherby", Group.FLOWERS, PatchKind.FLOWER, VarbitID.FARMING_TRANSMIT_C, 11062),
+	FLOWER_FALADOR("Falador", Group.FLOWERS, PatchKind.FLOWER, VarbitID.FARMING_TRANSMIT_C, 12083),
+	FLOWER_HOSIDIUS("Hosidius", Group.FLOWERS, PatchKind.FLOWER, VarbitID.FARMING_TRANSMIT_C, 6967),
+	FLOWER_PORT_PHASMATYS("Port Phasmatys", Group.FLOWERS, PatchKind.FLOWER, VarbitID.FARMING_TRANSMIT_C, 14391),
+	FLOWER_CIVITAS("Civitas illa Fortis", Group.FLOWERS, PatchKind.FLOWER, VarbitID.FARMING_TRANSMIT_C, 6192),
+	FLOWER_GUILD("Farming Guild", Group.FLOWERS, PatchKind.FLOWER, VarbitID.FARMING_TRANSMIT_H, -1),
+	FLOWER_PRIF("Prifddinas", Group.FLOWERS, PatchKind.FLOWER, VarbitID.FARMING_TRANSMIT_C, 13151),
+	FLOWER_KASTORI("Kastori", Group.FLOWERS, PatchKind.FLOWER, VarbitID.FARMING_TRANSMIT_C, 5423),
+	HOPS_LUMBRIDGE("Lumbridge", Group.HOPS, PatchKind.HOPS, VarbitID.FARMING_TRANSMIT_A, 12851),
+	HOPS_SEERS("Seers' Village", Group.HOPS, PatchKind.HOPS, VarbitID.FARMING_TRANSMIT_A, 10551),
+	HOPS_YANILLE("Yanille", Group.HOPS, PatchKind.HOPS, VarbitID.FARMING_TRANSMIT_A, 10288),
+	HOPS_ENTRANA("Entrana", Group.HOPS, PatchKind.HOPS, VarbitID.FARMING_TRANSMIT_A, 11060),
+	HOPS_ALDARIN("Aldarin", Group.HOPS, PatchKind.HOPS, VarbitID.FARMING_TRANSMIT_A, 5421);
 
 
 	/** How chores are grouped. */
@@ -64,7 +106,11 @@ public enum Spot
 		HARDWOODS("Hardwood trees"),
 		TREES("Special trees"),
 		SPIRIT_TREES("Spirit trees"),
-		PATCHES("Special patches");
+		PATCHES("Special patches"),
+		HERBS("Herbs"),
+		ALLOTMENTS("Allotments"),
+		FLOWERS("Flowers"),
+		HOPS("Hops");
 
 		private final String label;
 
@@ -153,6 +199,14 @@ public enum Spot
 				return "Anima";
 			case HESPORI:
 				return "Hespori";
+			case HERB:
+				return "Herbs";
+			case ALLOTMENT:
+				return "Allotment";
+			case FLOWER:
+				return "Flowers";
+			case HOPS:
+				return "Hops";
 			default:
 				return kind.name();
 		}

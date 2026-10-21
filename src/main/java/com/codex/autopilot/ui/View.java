@@ -1,6 +1,7 @@
 package com.codex.autopilot.ui;
 
 import com.codex.autopilot.core.Activity;
+import com.codex.autopilot.core.Budget;
 import com.codex.autopilot.core.Plan;
 import java.util.Collections;
 import java.util.List;
@@ -36,9 +37,19 @@ public final class View
 	public final boolean quiet;
 	public final boolean skipped;
 	public final List<Source> sources;
+	/** The time the player said they have. */
+	public final Budget budget;
+	/** What fits it; every step when there is no limit. */
+	public final Budget.Fit fit;
 
 	public View(boolean loggedIn, boolean known, Plan plan, Activity activity, boolean minigamePilot, String nextUp,
 		boolean quiet, boolean skipped, List<Source> sources)
+	{
+		this(loggedIn, known, plan, activity, minigamePilot, nextUp, quiet, skipped, sources, Budget.NONE, null);
+	}
+
+	public View(boolean loggedIn, boolean known, Plan plan, Activity activity, boolean minigamePilot, String nextUp,
+		boolean quiet, boolean skipped, List<Source> sources, Budget budget, Budget.Fit fit)
 	{
 		this.loggedIn = loggedIn;
 		this.known = known;
@@ -49,6 +60,14 @@ public final class View
 		this.quiet = quiet;
 		this.skipped = skipped;
 		this.sources = sources == null ? Collections.emptyList() : sources;
+		this.budget = budget == null ? Budget.NONE : budget;
+		this.fit = fit == null ? Budget.Fit.NONE : fit;
+	}
+
+	/** Whether a time budget is set, so the panel shows what fits rather than everything. */
+	public boolean budgeted()
+	{
+		return budget != Budget.NONE;
 	}
 
 	public static View empty()
