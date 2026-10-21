@@ -306,7 +306,7 @@ public class HerbRunTest
 		in.dailies = Dailies.read(AutopilotCoreTest.vars(new HashMap<>()));
 		for (Candidate c : Advisor.candidates(in, Settings.defaults().rounds(true), T0))
 		{
-			assertEquals(c.toString(), c.getKind().isChore(), c.getWhy().endsWith("; " + Advisor.ROUNDS));
+			assertEquals(c.toString(), Advisor.routedByRounds(c.getKind()), c.getWhy().endsWith("; " + Advisor.ROUNDS));
 		}
 		for (Candidate c : Advisor.candidates(in, Settings.defaults(), T0))
 		{

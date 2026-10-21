@@ -21,6 +21,12 @@ public final class Advisor
 	{
 	}
 
+	/** Codex Rounds routes bird houses, trees and special patches; herb and hops runs are not on its round. */
+	static boolean routedByRounds(Candidate.Kind kind)
+	{
+		return kind == Candidate.Kind.BIRDHOUSE_RUN || kind == Candidate.Kind.TREE_RUN || kind == Candidate.Kind.PATCH_RUN;
+	}
+
 	/** What was read for one evaluation. Any field may be empty or null. */
 	public static final class Inputs
 	{
@@ -70,7 +76,7 @@ public final class Advisor
 					{
 						c = in.pace.apply(c);
 					}
-					out.add(s.isRounds() ? c.withNote(ROUNDS) : c);
+					out.add(s.isRounds() && routedByRounds(c.getKind()) ? c.withNote(ROUNDS) : c);
 				}
 			}
 			catch (RuntimeException e)
