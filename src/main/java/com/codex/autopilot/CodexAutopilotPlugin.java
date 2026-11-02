@@ -1,5 +1,6 @@
 package com.codex.autopilot;
 
+import com.codex.autopilot.notes.FieldNotes;
 import com.codex.autopilot.core.Activity;
 import com.codex.autopilot.core.Advisor;
 import com.codex.autopilot.core.BankSnapshot;
@@ -106,6 +107,9 @@ public class CodexAutopilotPlugin extends Plugin
 	@Inject
 	private CodexAutopilotConfig config;
 
+	/** The optional local record of what the plugin read and decided. */
+	private FieldNotes notes;
+
 	@Inject
 	private Notifier notifier;
 
@@ -140,6 +144,11 @@ public class CodexAutopilotPlugin extends Plugin
 	@Override
 	protected void startUp()
 	{
+		notes = new FieldNotes(this::getPluginDirectory, gson);
+		if (config.fieldNotes())
+		{
+			notes.open();
+		}
 		panel = new AutopilotPanel(new PanelActions());
 		navButton = NavigationButton.builder()
 			.tooltip("Codex Autopilot")
@@ -162,6 +171,11 @@ public class CodexAutopilotPlugin extends Plugin
 	@Override
 	protected void shutDown()
 	{
+		if (notes != null)
+		{
+			notes.shutdown();
+			notes = null;
+		}
 		overlayManager.remove(plaque);
 		clientToolbar.removeNavigation(navButton);
 		plaque.show(null);
@@ -239,6 +253,18 @@ public class CodexAutopilotPlugin extends Plugin
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
+		if (CodexAutopilotConfig.GROUP.equals(event.getGroup()) && "fieldNotes".equals(event.getKey()) && notes != null)
+		{
+			if (config.fieldNotes())
+			{
+				notes.open();
+			}
+			else
+			{
+				notes.close();
+			}
+			return;
+		}
 		String group = event.getGroup();
 		if (CodexAutopilotConfig.GROUP.equals(group) && CHORE_KEYS.contains(event.getKey()))
 		{
@@ -367,6 +393,17 @@ public class CodexAutopilotPlugin extends Plugin
 			announce(all, plan, now);
 		}
 
+		if (notes.isOpen() && known)
+		{
+			// The ranking and what it was read from, so a strange next step can be traced.
+			com.google.gson.JsonObject n = new com.google.gson.JsonObject();
+			n.add("top", notes.safe(top));
+			n.addProperty("nextUp", nextUp);
+			n.add("ranked", notes.safe(all.subList(0, Math.min(8, all.size()))));
+			n.addProperty("budget", String.valueOf(budget));
+			n.addProperty("activity", String.valueOf(activity));
+			notes.noteChanged("plan", n);
+		}
 		boolean aside = config.stepAside() && activity != Activity.NONE;
 		plaque.show(config.plaque() && loggedIn && !aside ? top : null);
 
