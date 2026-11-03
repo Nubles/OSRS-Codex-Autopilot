@@ -1,0 +1,21 @@
+# Autopilot puts a daily on the plaque only once the account has earned it and has not claimed it.
+# Zaff's battlestaves: unlocked by the Varrock easy diary (VARROCK_DIARY_EASY_COMPLETE = 1), and
+# open while ZAFF_LAST_CLAIMED is 0 (source: OSRS wiki, "Varrock Diary" rewards: 15 battlestaves
+# a day from Zaff after the easy tier; RuneLite gameval VarbitID). Autopilot looks every 5 ticks.
+include /replays/scenes/varrock.scene
+
+# A fresh account: nothing earned, nothing to show.
+tick 6
+expect title = null
+
+# The easy diary is done and today's staves are waiting.
+varbit VARROCK_DIARY_EASY_COMPLETE 1
+varbit ZAFF_LAST_CLAIMED 0
+tick 5
+expect key = dailies
+expect title = "Zaff's battlestaves"
+
+# Bought: the daily drops off the plaque.
+varbit ZAFF_LAST_CLAIMED 1
+tick 5
+expect title = null
