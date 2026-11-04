@@ -4,8 +4,10 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -26,6 +28,12 @@ import java.util.Map;
  * and a gap longer than five minutes (a bank trip, a break, a logout) is not counted, so the
  * rate is the player's own kills an hour while on task. It is kept per task, for this account
  * only, and trusted once twenty kills are timed.</p>
+ *
+ * <p>Each finished task is also kept (the last {@link #KEEP_DONE}): who gave it, the points it paid
+ * (the rise in {@code SLAYER_POINTS} as the streak moves on) and the logged-in time from when it
+ * was given to when it was done, leaving out any stretch over twenty minutes with nothing read
+ * (a break). From these come the player's own Slayer points an hour and minutes a task with each
+ * master, which is what tells Turael skipping from full tasks for this player.</p>
  */
 public final class SlayerLog
 {
@@ -40,6 +48,54 @@ public final class SlayerLog
 	static final long MAX_GAP_SECONDS = 300;
 	/** More kills than this between two looks is not a kill but a misreading. */
 	static final int MAX_STEP = 10;
+	/** Finished tasks kept for the player's own points an hour. */
+	public static final int KEEP_DONE = 100;
+	/** Finished tasks timed before points an hour is shown. */
+	public static final int TRUST_TASKS = 3;
+	/** Tasks with one master timed before minutes a task with them is shown. */
+	public static final int TRUST_MASTER_TASKS = 2;
+	/** A stretch on a task longer than this with nothing read was a break, and is not timed. */
+	static final long MAX_TASK_GAP_MS = 20 * 60_000L;
+	/** Under this, a "finished" task was not one the player did (a task given and cancelled at once). */
+	static final long MIN_TASK_MS = 20_000L;
+
+	/** One finished task. */
+	public static final class Done
+	{
+		/** Who gave it, or null when not known. */
+		public final Slayer.Master master;
+		public final int points;
+		public final int seconds;
+		/** When it was finished, epoch ms. */
+		public final long at;
+
+		Done(Slayer.Master master, int points, int seconds, long at)
+		{
+			this.master = master;
+			this.points = points;
+			this.seconds = seconds;
+			this.at = at;
+		}
+	}
+
+	/** A task just finished, waiting on the streak and points to move on. */
+	private static final class Pending
+	{
+		final Slayer.Master master;
+		final long taskMs;
+		final int points;
+		final int streak;
+		final long at;
+
+		Pending(Slayer.Master master, long taskMs, int points, int streak, long at)
+		{
+			this.at = at;
+			this.master = master;
+			this.taskMs = taskMs;
+			this.points = points;
+			this.streak = streak;
+		}
+	}
 
 	/** One look at the game. */
 	public static final class Reading
@@ -87,6 +143,16 @@ public final class SlayerLog
 	private final Map<Integer, Slayer.Master> masters = new HashMap<>();
 	/** Task key to {kills timed, seconds}. */
 	private final Map<String, double[]> pace = new LinkedHashMap<>();
+	/** Logged-in time on the task in hand so far. */
+	private long taskMs;
+	/** Finished tasks, oldest first. */
+	private final List<Done> done = new ArrayList<>();
+
+	/** The clock at the last look while a task was held, or 0. */
+	private transient long lastClock;
+	private transient Pending pending;
+	/** The player's skip plan, as set in the config; not saved here. */
+	private transient SkipPlan plan = SkipPlan.off();
 
 	/** The count as last seen this session, or -1 before the first look; a kill is only counted between two looks. */
 	private transient int live = -1;
@@ -112,6 +178,11 @@ public final class SlayerLog
 		{
 			masters.putAll(r.masters);
 		}
+		if (amount > 0 && lastClock > 0 && clock > lastClock && clock - lastClock <= MAX_TASK_GAP_MS)
+		{
+			taskMs += clock - lastClock;
+		}
+		lastClock = 0;
 		if (r.amount > 0)
 		{
 			boolean same = r.taskId == taskId && r.bossId == bossId && r.areaId == areaId && amount > 0;
@@ -128,6 +199,7 @@ public final class SlayerLog
 				masterId = r.masterId;
 				master = resolve(r);
 				lastKillMs = 0;
+				taskMs = 0;
 			}
 			else
 			{
@@ -160,6 +232,7 @@ public final class SlayerLog
 			amount = r.amount;
 			live = r.amount;
 			seenAt = nowMs;
+			lastClock = clock;
 		}
 		else
 		{
@@ -167,6 +240,7 @@ public final class SlayerLog
 			{
 				// Finished (or cancelled): the next step is a new one.
 				lastTask = name;
+				pending = new Pending(master, taskMs, points, streakFor(master), nowMs);
 			}
 			clearTask();
 			live = 0;
@@ -196,11 +270,53 @@ public final class SlayerLog
 		{
 			account = r.account.copy();
 		}
+		if (pending != null)
+		{
+			// A new task settles the last one: recorded if the streak moved on, else dropped.
+			settle(r.amount > 0);
+		}
 		if (streak > 0 || points > 0)
 		{
 			seenAt = Math.max(seenAt, 1);
 		}
 		return !before.equals(signature());
+	}
+
+	/**
+	 * Records the task just finished once the streak has moved on and the points it paid are in:
+	 * at once for a task that pays nothing (Turael, Spria, the first four), else when the points
+	 * change, or when the next task arrives first ({@code force}). A streak that did not move on
+	 * means the task was not completed (cancelled or changed), and nothing is recorded.
+	 */
+	private void settle(boolean force)
+	{
+		Pending p = pending;
+		int now = streakFor(p.master);
+		if (p.streak < 0 || now <= p.streak)
+		{
+			if (force)
+			{
+				pending = null;
+			}
+			return;
+		}
+		int expected = p.master == null || p.master == Slayer.Master.MORTIMER ? -1 : p.master.points(now, account);
+		boolean paid = points >= 0 && p.points >= 0 && points != p.points;
+		if (!force && !paid && expected != 0)
+		{
+			return;
+		}
+		pending = null;
+		if (p.taskMs < MIN_TASK_MS)
+		{
+			return;
+		}
+		int gained = paid && points > p.points ? points - p.points : 0;
+		done.add(new Done(p.master, gained, (int) (p.taskMs / 1000), p.at));
+		while (done.size() > KEEP_DONE)
+		{
+			done.remove(0);
+		}
 	}
 
 	private void clearTask()
@@ -214,6 +330,7 @@ public final class SlayerLog
 		amount = 0;
 		initial = 0;
 		lastKillMs = 0;
+		taskMs = 0;
 	}
 
 	private Slayer.Master resolve(Reading r)
@@ -271,6 +388,7 @@ public final class SlayerLog
 	{
 		live = -1;
 		lastKillMs = 0;
+		lastClock = 0;
 	}
 
 	/** What the pace of the task in hand is kept under: its name, else its id. */
@@ -292,7 +410,7 @@ public final class SlayerLog
 			.append(mortimerStreak).append('|').append(lastTask).append('|').append(account.combat).append('|').append(account.slayer)
 			.append('|').append(account.hashCode()).append(account.priestInPeril).append(account.lostCity).append(account.shilo)
 			.append(account.wgs).append(account.mm2).append(account.westernElite).append(account.kourendElite).append('|')
-			.append(masters).append('|').append(pace.size());
+			.append(masters).append('|').append(pace.size()).append('|').append(done.size()).append('|').append(taskMs / 60_000);
 		for (double[] p : pace.values())
 		{
 			sb.append(',').append(p[0]);
@@ -417,6 +535,105 @@ public final class SlayerLog
 		return (int) Math.max(1, Math.round(amount * 60 / rate));
 	}
 
+	/** Finished tasks, oldest first. */
+	public synchronized List<Done> getDone()
+	{
+		return new ArrayList<>(done);
+	}
+
+	/** Logged-in minutes on the task in hand so far. */
+	public synchronized int taskMinutes()
+	{
+		return (int) (taskMs / 60_000);
+	}
+
+	/** This player's own Slayer points an hour over their finished tasks, or 0 until {@link #TRUST_TASKS} are timed. */
+	public synchronized double pointsPerHour()
+	{
+		long seconds = 0;
+		long pts = 0;
+		int n = 0;
+		for (Done d : done)
+		{
+			if (d.master == Slayer.Master.KRYSTILIA || d.master == Slayer.Master.MORTIMER || d.seconds <= 0)
+			{
+				continue;
+			}
+			seconds += d.seconds;
+			pts += d.points;
+			n++;
+		}
+		return n < TRUST_TASKS || seconds <= 0 ? 0 : pts * 3600.0 / seconds;
+	}
+
+	/** Finished tasks counted in {@link #pointsPerHour()}. */
+	public synchronized int timedTasks()
+	{
+		int n = 0;
+		for (Done d : done)
+		{
+			if (d.master != Slayer.Master.KRYSTILIA && d.master != Slayer.Master.MORTIMER && d.seconds > 0)
+			{
+				n++;
+			}
+		}
+		return n;
+	}
+
+	/** This player's own minutes a task with this master, or 0 until {@link #TRUST_MASTER_TASKS} are timed. */
+	public synchronized double minutesPerTask(Slayer.Master m)
+	{
+		return minutes(m, null);
+	}
+
+	/** Minutes a task with Turael or Spria, the quick tasks of a skip, or 0 until enough are timed. */
+	public synchronized double minutesPerQuickTask()
+	{
+		return minutes(Slayer.Master.TURAEL, Slayer.Master.SPRIA);
+	}
+
+	/** Tasks timed with this master. */
+	public synchronized int tasksWith(Slayer.Master m)
+	{
+		int n = 0;
+		for (Done d : done)
+		{
+			if (d.master == m && d.seconds > 0)
+			{
+				n++;
+			}
+		}
+		return n;
+	}
+
+	private double minutes(Slayer.Master a, Slayer.Master b)
+	{
+		long seconds = 0;
+		int n = 0;
+		for (Done d : done)
+		{
+			if (d.master != null && (d.master == a || d.master == b) && d.seconds > 0)
+			{
+				seconds += d.seconds;
+				n++;
+			}
+		}
+		return n < TRUST_MASTER_TASKS ? 0 : seconds / 60.0 / n;
+	}
+
+	/** The player's skip plan, as set in the config. */
+	public synchronized SkipPlan getPlan()
+	{
+		return plan;
+	}
+
+	/** This log with the player's skip plan, for planning; returns this. */
+	public synchronized SlayerLog withPlan(SkipPlan p)
+	{
+		plan = p == null ? SkipPlan.off() : p;
+		return this;
+	}
+
 	public synchronized SlayerLog copy()
 	{
 		SlayerLog b = new SlayerLog();
@@ -441,6 +658,11 @@ public final class SlayerLog
 		pace.forEach((k, v) -> b.pace.put(k, v.clone()));
 		b.live = live;
 		b.lastKillMs = lastKillMs;
+		b.taskMs = taskMs;
+		b.done.addAll(done);
+		b.lastClock = lastClock;
+		b.pending = pending;
+		b.plan = plan;
 		return b;
 	}
 
@@ -501,6 +723,18 @@ public final class SlayerLog
 			p.add(k, arr);
 		});
 		o.add("pace", p);
+		o.addProperty("taskMs", taskMs);
+		JsonArray d = new JsonArray();
+		for (Done x : done)
+		{
+			JsonArray arr = new JsonArray();
+			arr.add(x.master == null ? "" : x.master.name());
+			arr.add(x.points);
+			arr.add(x.seconds);
+			arr.add(x.at);
+			d.add(arr);
+		}
+		o.add("done", d);
 		return gson.toJson(o);
 	}
 
@@ -590,6 +824,31 @@ public final class SlayerLog
 					{
 						b.pace.put(e.getKey(), new double[]{Math.min(kills, KEEP_KILLS * 2), seconds});
 					}
+				}
+			}
+			b.taskMs = b.amount > 0 ? Math.max(0, Math.min(24 * 3_600_000L, Json.whole(o, "taskMs", 0))) : 0;
+			JsonElement d = o.get("done");
+			if (d != null && d.isJsonArray())
+			{
+				for (JsonElement e : d.getAsJsonArray())
+				{
+					if (!e.isJsonArray() || e.getAsJsonArray().size() != 4)
+					{
+						continue;
+					}
+					JsonArray arr = e.getAsJsonArray();
+					int pts = (int) Json.real(arr.get(1), -1);
+					int secs = (int) Json.real(arr.get(2), -1);
+					long at = (long) Json.real(arr.get(3), 0);
+					if (pts < 0 || pts > 10_000 || secs < 0 || secs > 24 * 3600)
+					{
+						continue;
+					}
+					b.done.add(new Done(master(Json.text(arr.get(0))), pts, secs, at));
+				}
+				while (b.done.size() > KEEP_DONE)
+				{
+					b.done.remove(0);
 				}
 			}
 		}

@@ -1,6 +1,7 @@
 package com.codex.autopilot;
 
 import com.codex.autopilot.core.Budget;
+import com.codex.autopilot.core.SkipPlan;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
@@ -295,6 +296,45 @@ public interface CodexAutopilotConfig extends Config
 	default boolean learnPace()
 	{
 		return true;
+	}
+
+	@ConfigItem(
+		keyName = "slayerSkipPlan",
+		name = "Slayer skip plan",
+		description = "Plan your Slayer streak the \"Turael skipping\" way: take each milestone task from your high-points master"
+			+ " and the tasks between from Turael or Spria, whose tasks pay no points but still count. Never suggests changing a"
+			+ " task you hold at Turael, which resets the streak to zero",
+		section = PRIORITIES,
+		position = 5
+	)
+	default boolean slayerSkipPlan()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "slayerSkipMaster",
+		name = "Milestone master",
+		description = "Who the skip plan takes milestone tasks from. Falls back to the master open to you who pays the most",
+		section = PRIORITIES,
+		position = 6
+	)
+	default SkipPlan.Choice slayerSkipMaster()
+	{
+		return SkipPlan.Choice.BEST;
+	}
+
+	@ConfigItem(
+		keyName = "slayerSkipEvery",
+		name = "Milestones",
+		description = "Which tasks of the streak the skip plan takes from the milestone master: every 10th (5x points and up) or"
+			+ " only every 50th (15x and up)",
+		section = PRIORITIES,
+		position = 7
+	)
+	default SkipPlan.Every slayerSkipEvery()
+	{
+		return SkipPlan.Every.TENTH;
 	}
 
 	@ConfigItem(
