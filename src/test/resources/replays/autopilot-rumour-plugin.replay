@@ -1,0 +1,29 @@
+# A rumour taken on before Autopilot was installed (Hunter Rumours issues #74 and #82 ask for the
+# same): with nothing read itself, Autopilot plans with the rumour the Hunter Rumours plugin saved
+# (hunterrumours/current.hunter, hunter.<npc id>, current.rumour.finished: its enum names; Guild
+# Hunter Ornus is NPC 13122, RuneLite gameval NpcID.HG_ORNUS). Pyre foxes are caught with deadfalls
+# in the Avium Savannah (OSRS wiki, "Hunters' Rumours"; RuneLite worldmap HunterAreaLocation).
+# Once Autopilot reads the game itself, its own reading stands.
+include /replays/scenes/varrock.scene
+watch over plaque.shown.over
+watch why plaque.shown.why
+skill HUNTER 60
+saved-in hunterrumours current.hunter ADEPT_ORNUS
+saved-in hunterrumours hunter.13122 PYRE_FOX
+tick 6
+expect over = "Hunter rumour"
+expect title = "Pyre fox for Ornus"
+expect why ~ "Deadfalls at Avium Savannah"
+expect why ~ "as Hunter Rumours saved it"
+
+# Their save says the part is found.
+saved-in hunterrumours current.rumour.finished true
+tick 5
+expect title = "Take the part back to Ornus"
+
+# Autopilot hears Ornus hand it in: from now on its own reading is used.
+chat DIALOG "Guild Hunter Ornus (Adept)|Thanks for that. I'll mark off that report for you. Would you like another rumour?"
+tick 5
+expect key = rumour:new
+expect title = "New rumour from Ornus or Cervus"
+expect why = "At 60 Hunter, adept rumours pay 3,250 Hunter xp and an adept loot sack"

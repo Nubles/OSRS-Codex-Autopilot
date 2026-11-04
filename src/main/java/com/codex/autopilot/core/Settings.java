@@ -9,6 +9,7 @@ public final class Settings
 	private boolean rounds;
 	private boolean dailies = true;
 	private boolean kingdom = true;
+	private boolean rumours = true;
 	private boolean navigator = true;
 	private boolean bankSteward = true;
 	private boolean wayfinder = true;
@@ -52,6 +53,13 @@ public final class Settings
 	public Settings rounds(boolean v)
 	{
 		rounds = v;
+		return this;
+	}
+
+	/** The Hunter Guild rumour as a step. */
+	public Settings rumours(boolean v)
+	{
+		rumours = v;
 		return this;
 	}
 
@@ -176,6 +184,11 @@ public final class Settings
 	public boolean isRounds()
 	{
 		return rounds;
+	}
+
+	public boolean isRumours()
+	{
+		return rumours;
 	}
 
 	public boolean isDailies()

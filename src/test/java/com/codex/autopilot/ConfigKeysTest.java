@@ -29,7 +29,7 @@ public class ConfigKeysTest
 		}
 		assertEquals(new HashSet<>(Arrays.asList(
 			"plaque", "quiet", "stepAside", "timeBudget",
-			"chores", "herbs", "hops", "dailies", "kingdom", "navigator", "bankSteward",
+			"chores", "herbs", "hops", "dailies", "kingdom", "rumours", "navigator", "bankSteward",
 			"goalFirst", "wasteHours", "approvalTarget", "cofferSlack", "learnPace",
 			"notify", "notifyWaste", "notifyReady",
 			// The Codex suite.
@@ -40,5 +40,6 @@ public class ConfigKeysTest
 		// Saved per account beside the settings.
 		assertEquals("paceV1", Pace.KEY);
 		assertEquals("planV1", SharedPlan.KEY);
+		assertEquals("rumourV1", com.codex.autopilot.core.RumourBook.KEY);
 	}
 }

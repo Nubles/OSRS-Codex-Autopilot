@@ -15,7 +15,7 @@ import java.awt.geom.RoundRectangle2D;
 
 /**
  * A small engraved mark for each kind of step: a bird house, a tree, a sprout, a herb sprig, a hop
- * cone, an hourglass, a scroll, a crown, a star, a flag, a coin stack, a skull, a crate and a book. Drawn rather than taken from item sprites, so it reads the
+ * cone, an hourglass, a scroll, a crown, a star, a flag, a coin stack, a skull, a crate, a book and a paw print. Drawn rather than taken from item sprites, so it reads the
  * same at any size and in the game view.
  */
 public final class Glyph
@@ -178,6 +178,23 @@ public final class Glyph
 				p.curveTo(12.5, 2.4, 10, 2.4, 8, 4);
 				p.closePath();
 				return p;
+			}
+			case RUMOUR:
+			{
+				// A paw print: the pad and four toes, the creature the rumour is about.
+				Path2D pad = new Path2D.Float();
+				pad.moveTo(8, 7.6);
+				pad.curveTo(11.4, 7.6, 13.6, 11.4, 12.6, 13.4);
+				pad.curveTo(11.8, 15, 9.8, 14.2, 8, 14.2);
+				pad.curveTo(6.2, 14.2, 4.2, 15, 3.4, 13.4);
+				pad.curveTo(2.4, 11.4, 4.6, 7.6, 8, 7.6);
+				pad.closePath();
+				Area a = new Area(pad);
+				a.add(new Area(new Ellipse2D.Float(0.8f, 4.6f, 3.2f, 4.2f)));
+				a.add(new Area(new Ellipse2D.Float(4.2f, 1.2f, 3.2f, 4.4f)));
+				a.add(new Area(new Ellipse2D.Float(8.6f, 1.2f, 3.2f, 4.4f)));
+				a.add(new Area(new Ellipse2D.Float(12f, 4.6f, 3.2f, 4.2f)));
+				return a;
 			}
 			default:
 			{

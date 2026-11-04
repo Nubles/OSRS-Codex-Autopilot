@@ -22,6 +22,7 @@ import com.codex.autopilot.core.Plan;
 import com.codex.autopilot.core.Profile;
 import com.codex.autopilot.core.Ranker;
 import com.codex.autopilot.core.RoundsDailies;
+import com.codex.autopilot.core.RumourBook;
 import com.codex.autopilot.core.SavingsGoal;
 import com.codex.autopilot.core.Session;
 import com.codex.autopilot.core.Settings;
@@ -54,6 +55,9 @@ import net.runelite.api.NPC;
 import net.runelite.api.Player;
 import net.runelite.api.Quest;
 import net.runelite.api.QuestState;
+import net.runelite.api.Skill;
+import net.runelite.api.ChatMessageType;
+import net.runelite.api.events.ChatMessage;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
@@ -105,6 +109,13 @@ public class CodexAutopilotPlugin extends Plugin
 	/** Codex apps whose shared saves change the plan as soon as they change. Ledger is read on a slower beat. */
 	private static final Set<String> SUITE_GROUPS = new HashSet<>(Arrays.asList(Atlas.GROUP, MoneyRuns.GROUP, BossLog.GROUP,
 		SavingsGoal.GROUP, Kits.GROUP, RoundsDailies.GROUP, WantedSlots.GROUP));
+	/** The Hunter Rumours plugin's saved rumour, read when Autopilot has read none itself. */
+	private static final String HUNTER_RUMOURS = "hunterrumours";
+	/** RuneLite's chat commands plugin keeps the rumour count here, as it does boss kill counts. */
+	private static final String KILLCOUNT = "killcount";
+	private static final String RUMOUR_COUNT = "hunter rumours";
+	/** The rumour's hunting time is saved this often while it runs; what the game says is saved at once. */
+	private static final int RUMOUR_SAVE_TICKS = 500;
 	/** Codex Ledger saves often and its ledger is large: it is read again at most this often. */
 	private static final long LEDGER_SECONDS = 60;
 
@@ -151,6 +162,11 @@ public class CodexAutopilotPlugin extends Plugin
 	private List<DailyState> dailies;
 	private boolean royalTrouble;
 	private Activity activity = Activity.NONE;
+	/** The account's Hunter Guild rumour, read from the game; loaded from its save on first use. */
+	private RumourBook rumour;
+	private boolean rumourDirty;
+	private boolean atFirstLight;
+	private int hunterLevel;
 
 	// Parsed only when the saved text changes.
 	private String boardJson;
@@ -258,6 +274,10 @@ public class CodexAutopilotPlugin extends Plugin
 		skipped = false;
 		dailies = null;
 		activity = Activity.NONE;
+		rumour = null;
+		rumourDirty = false;
+		atFirstLight = false;
+		hunterLevel = 0;
 		boardJson = null;
 		board = null;
 		bankJson = null;
@@ -295,7 +315,73 @@ public class CodexAutopilotPlugin extends Plugin
 			return;
 		}
 		readLive(ticks % QUEST_TICKS == 0);
+		huntRumour(ticks % RUMOUR_SAVE_TICKS == 0);
 		evaluate();
+	}
+
+	@Subscribe
+	public void onChatMessage(ChatMessage event)
+	{
+		if (!config.rumours() || configManager.getRSProfileKey() == null)
+		{
+			return;
+		}
+		ChatMessageType type = event.getType();
+		boolean dialog = type == ChatMessageType.DIALOG;
+		if (!dialog && type != ChatMessageType.GAMEMESSAGE && type != ChatMessageType.MESBOX)
+		{
+			return;
+		}
+		RumourBook book = rumourBook();
+		if (book.read(dialog, event.getMessage(), System.currentTimeMillis()))
+		{
+			rumourDirty = true;
+			saveRumour();
+			evaluate();
+		}
+	}
+
+	/** The rumour's hunting time runs while logged in; the level and quest are noted, and saved now and then. */
+	private void huntRumour(boolean save)
+	{
+		if (!config.rumours() || configManager.getRSProfileKey() == null || client.getGameState() != GameState.LOGGED_IN)
+		{
+			return;
+		}
+		RumourBook book = rumourBook();
+		book.hunted(EVALUATE_TICKS * 600L / 1000);
+		if (book.getCreature() != null && !book.hasPart())
+		{
+			rumourDirty = true;
+		}
+		if (hunterLevel > 0 && book.account(hunterLevel, atFirstLight))
+		{
+			rumourDirty = true;
+			save = true;
+		}
+		if (save)
+		{
+			saveRumour();
+		}
+	}
+
+	private RumourBook rumourBook()
+	{
+		if (rumour == null)
+		{
+			rumour = RumourBook.parse(gson, Profile.safe((g, k) -> configManager.getRSProfileConfiguration(g, k),
+				CodexAutopilotConfig.GROUP, RumourBook.KEY));
+		}
+		return rumour;
+	}
+
+	private void saveRumour()
+	{
+		if (rumourDirty && rumour != null && configManager.getRSProfileKey() != null)
+		{
+			rumourDirty = false;
+			configManager.setRSProfileConfiguration(CodexAutopilotConfig.GROUP, RumourBook.KEY, rumour.toJson(gson));
+		}
 	}
 
 	@Subscribe
@@ -306,6 +392,7 @@ public class CodexAutopilotPlugin extends Plugin
 			dailies = null;
 			activity = Activity.NONE;
 			here = null;
+			saveRumour();
 			// Out of sight: a run in progress cannot be timed across it.
 			watch.abandon();
 			evaluate();
@@ -327,6 +414,11 @@ public class CodexAutopilotPlugin extends Plugin
 	public void onRuneScapeProfileChanged(RuneScapeProfileChanged event)
 	{
 		// Another account: what was set aside, told or timed belonged to the last one.
+		saveRumour();
+		rumour = null;
+		rumourDirty = false;
+		hunterLevel = 0;
+		atFirstLight = false;
 		session.clear();
 		heads.reset();
 		watch.abandon();
@@ -362,13 +454,15 @@ public class CodexAutopilotPlugin extends Plugin
 		{
 			watch.abandon();
 		}
-		if (CodexAutopilotConfig.GROUP.equals(group) && (Pace.KEY.equals(event.getKey()) || SharedPlan.KEY.equals(event.getKey())))
+		if (CodexAutopilotConfig.GROUP.equals(group) && (Pace.KEY.equals(event.getKey()) || SharedPlan.KEY.equals(event.getKey())
+			|| RumourBook.KEY.equals(event.getKey())))
 		{
 			// Autopilot's own save of the pace or of the shared plan; nothing new to show.
 			return;
 		}
 		if (CodexAutopilotConfig.GROUP.equals(group) || TIME_TRACKING.equals(group) || GoalBoard.GROUP.equals(group)
-			|| BankSnapshot.GROUP.equals(group) || "kingdomofmiscellania".equals(group) || SUITE_GROUPS.contains(group))
+			|| BankSnapshot.GROUP.equals(group) || "kingdomofmiscellania".equals(group) || SUITE_GROUPS.contains(group)
+			|| HUNTER_RUMOURS.equals(group))
 		{
 			clientThread.invokeLater(this::evaluate);
 		}
@@ -408,8 +502,24 @@ public class CodexAutopilotPlugin extends Plugin
 			{
 				royalTrouble = false;
 			}
+			try
+			{
+				atFirstLight = Quest.AT_FIRST_LIGHT.getState(client) == QuestState.FINISHED;
+			}
+			catch (RuntimeException e)
+			{
+				atFirstLight = false;
+			}
 		}
 		activity = readActivity();
+		try
+		{
+			hunterLevel = client.getRealSkillLevel(Skill.HUNTER);
+		}
+		catch (RuntimeException e)
+		{
+			hunterLevel = 0;
+		}
 		Player me = client.getLocalPlayer();
 		WorldPoint at = me == null ? null : me.getWorldLocation();
 		here = at == null ? null : Tile.of(at.getX(), at.getY(), at.getPlane());
@@ -451,6 +561,7 @@ public class CodexAutopilotPlugin extends Plugin
 			.rounds("true".equals(configManager.getConfiguration("runelite", ROUNDS_KEY)))
 			.dailies(config.dailies())
 			.kingdom(config.kingdom())
+			.rumours(config.rumours())
 			.navigator(config.navigator())
 			.bankSteward(config.bankSteward())
 			.wayfinder(config.wayfinder())
@@ -587,6 +698,13 @@ public class CodexAutopilotPlugin extends Plugin
 		{
 			in.wanted = wanted.get(Profile.safe(profile, WantedSlots.GROUP, WantedSlots.KEY), json -> WantedSlots.parse(gson, json));
 		}
+		if (s.isRumours())
+		{
+			RumourBook own = rumourBook();
+			RumourBook plugin = own.isBlank() ? RumourBook.fromHunterRumours(profile) : null;
+			in.rumour = own.orElse(plugin).withDone(count(Profile.safe(profile, KILLCOUNT, RUMOUR_COUNT)));
+			in.rumourFromPlugin = plugin != null && plugin.getCreature() != null;
+		}
 		in.prices = id -> itemManager.getItemPrice(id);
 		in.names = id -> itemManager.getItemComposition(id).getName();
 	}
@@ -691,6 +809,7 @@ public class CodexAutopilotPlugin extends Plugin
 		out.add(!s.isKingdom() ? off("Kingdom")
 			: in.kingdom == null ? new View.Source("Kingdom", "Not seen", false)
 			: new View.Source("Kingdom", in.kingdom.approvalPercent() + "% approval", true));
+		out.add(rumourSource(in, s));
 		out.add(!s.isNavigator() ? off("Navigator")
 			: in.board == null ? new View.Source("Navigator", "No goals", false)
 			: new View.Source("Navigator", in.board.open() == 1 ? "1 goal" : in.board.open() + " goals", true));
@@ -708,6 +827,33 @@ public class CodexAutopilotPlugin extends Plugin
 		long wasting = plan.count(Tier.WASTING);
 		out.add(new View.Source("At risk", wasting == 0 ? "Nothing" : String.valueOf(wasting), wasting > 0));
 		return out;
+	}
+
+	private static int count(String text)
+	{
+		try
+		{
+			return text == null ? -1 : Integer.parseInt(text.trim());
+		}
+		catch (NumberFormatException e)
+		{
+			return -1;
+		}
+	}
+
+	private static View.Source rumourSource(Advisor.Inputs in, Settings s)
+	{
+		RumourBook r = in.rumour;
+		if (!s.isRumours())
+		{
+			return off("Rumour");
+		}
+		if (r == null || r.getCreature() == null)
+		{
+			boolean known = r != null && (r.getSeenAt() > 0 || r.getDone() >= 0);
+			return new View.Source("Rumour", known ? "None held" : "Not seen", false);
+		}
+		return new View.Source("Rumour", r.hasPart() ? "Part found" : r.getCreature().getName(), true);
 	}
 
 	private static View.Source off(String label)

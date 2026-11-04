@@ -141,11 +141,24 @@ public interface CodexAutopilotConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "rumours",
+		name = "Hunter rumours",
+		description = "Your Hunter Guild rumour as a step: finish it, take the rare part back, or get a new one."
+			+ " Read from what the guild hunters, your quetzal whistle and the game say, or from the Hunter Rumours plugin's save",
+		section = SOURCES,
+		position = 5
+	)
+	default boolean rumours()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 		keyName = "navigator",
 		name = "Codex Navigator goals",
 		description = "Add the next step toward the goals you pinned in Codex Navigator",
 		section = SOURCES,
-		position = 5
+		position = 6
 	)
 	default boolean navigator()
 	{
@@ -157,7 +170,7 @@ public interface CodexAutopilotConfig extends Config
 		name = "Codex Bank Steward bank",
 		description = "Check what a chore needs against the bank Codex Bank Steward last saw",
 		section = SOURCES,
-		position = 6
+		position = 7
 	)
 	default boolean bankSteward()
 	{
