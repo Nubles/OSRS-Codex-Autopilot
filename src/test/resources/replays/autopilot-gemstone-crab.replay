@@ -1,0 +1,123 @@
+# The Gemstone Crab followed through Autopilot: its clock from its own bar, the shell while it is
+# the player's to mine, where to go once it burrows, and the player's own xp an hour there.
+# Facts (OSRS wiki, Gemstone Crab): it "moves between three mines in the Tlati Rainforest
+# approximately every 10 minutes"; its bar "is not affected by player damage" and drains to show when
+# it burrows; "The shell will remain for 90 seconds"; the top 16 by damage "may mine the shell for
+# three random unnoted uncut gems". The chat lines are the wiki's, word for word. The wiki gives no
+# order to its moves. The mines are RuneLite's world map markers (MiningSiteLocation
+# TLATI_RAINFOREST_SOUTH 1238 3043, _NORTH 1272 3173, _EAST 1352 3112); the wiki calls the south one
+# the South-west Tlati Rainforest mine. Ids are RuneLite's gameval: NpcID.GEMSTONE_CRAB.
+# The scenes are schematic: only where the player and the crab stand matters. The replay's game has
+# no health bars, so "bar" (see ReplayTest) stands in for the crab's.
+scene 1200 3000
+at 1240 3048
+login
+watch key plaque.shown.key
+watch title plaque.shown.title
+watch over plaque.shown.over
+watch why plaque.shown.why
+watch bring plaque.shown.bring
+watch tier plaque.shown.tier
+watch travel shared.steps.0.travel
+watch mine crab.mine
+watch xp crab.xp
+skill ATTACK 80
+skill STRENGTH 80
+skill DEFENCE 80
+skill HITPOINTS 80
+# Wayfinder shares an atlas with no teleports: the way is priced on foot.
+saved-in codexwayfinder atlasV1 "{version:1,savedAt:1767225600000,walkSecondsPerTile:0.3,teleports:[],networks:{FAIRY_RING:false},timedTrips:0}"
+
+# Away from the mines: no crab step.
+tick 5
+expect key != crab:fight
+
+# The crab at the south-west mine, 80% of its bar left: the wiki's ten minutes until its bar is timed.
+npc GEMSTONE_CRAB "Gemstone Crab" 1238 3046 5 level 160 as crab
+bar 0.8
+tick 5
+expect mine = SOUTH_WEST
+expect key = crab:fight
+expect over = "Gemstone Crab"
+expect title = "South-west mine, ~8 min left (est.)"
+expect why = "Then it burrows to the north or east mine"
+expect bring = "A pickaxe, to mine its shell"
+expect tier = READY
+expect travel = "you're there"
+
+# Its bar falls a tenth in 36 seconds (60 ticks), whatever the player does: 70% left is ~4 min 12 s.
+tick 55
+bar 0.7
+tick 5
+expect title = "South-west mine, ~5 min left"
+
+# Five minutes of fighting it: the player's own xp an hour shows.
+xp STRENGTH 1988068
+xp HITPOINTS 1986728
+tick 100
+xp STRENGTH 1990068
+xp HITPOINTS 1987388
+tick 100
+xp STRENGTH 1992068
+xp HITPOINTS 1988048
+tick 100
+xp STRENGTH 1994068
+xp HITPOINTS 1988708
+tick 100
+xp STRENGTH 1996068
+xp HITPOINTS 1989368
+tick 100
+expect why ~ "xp/hr here"
+expect xp = 13300
+# Forty seconds later the bar would be gone: it burrows, and the game says the shell is the player's.
+bar 0.05
+tick 5
+remove crab
+chat GAMEMESSAGE "The gemstone crab burrows away, leaving a piece of its shell behind."
+chat GAMEMESSAGE "You gained enough understanding of the crab to mine from its remains."
+tick 5
+expect key = crab:shell
+expect title = "Mine its shell, 3 gems"
+expect tier = WASTING
+expect why ~ "It sinks in 87s"
+expect bring = "A pickaxe"
+chat SPAM "You swing your pick at the crab shell."
+chat SPAM "You mine an uncut red topaz from the crab shell."
+chat SPAM "You mine an uncut opal from the crab shell."
+tick 5
+expect title = "Mine its shell, 1 gem left"
+chat SPAM "You mine an uncut jade from the crab shell."
+tick 5
+
+# All three mined: follow it. Nothing is learned of its order yet, so both other mines are priced.
+expect key = crab:follow
+expect title = "Follow it through the cave"
+expect why ~ "The cave at every mine leads to where it is now; it left the south-west mine; the wiki gives no order"
+expect travel ~ "walk"
+expect saved.gemstoneCrabV1 ~ "RED_TOPAZ"
+
+# Through the cave to the north mine, where it has come up: the move is learned.
+scene 1220 3120
+at 1272 3170
+npc GEMSTONE_CRAB "Gemstone Crab" 1272 3176 5 level 160 as crab2
+bar 1.0
+tick 5
+expect mine = NORTH
+expect title = "North mine, ~10 min left (est.)"
+expect why ~ "Then it burrows to the east or south-west mine"
+tick 100
+# The only mine name in the save is a learned move: south-west to north.
+expect saved.gemstoneCrabV1 ~ SOUTH_WEST
+
+# Walked off: no crab step, and what was timed is saved.
+at 1240 3220
+tick 5
+expect key != crab:fight
+expect key != crab:follow
+
+# Switched off: never a crab step, even back at the crab.
+config gemstoneCrab false
+at 1272 3170
+tick 5
+expect key != crab:fight
+expect mine = null

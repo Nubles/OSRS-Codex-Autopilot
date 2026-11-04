@@ -41,7 +41,9 @@ public final class Candidate
 		/** The pet kitten: feed or stroke it before it runs off. */
 		KITTEN("Kitten"),
 		/** The Slayer task in hand, or the next one to get. */
-		SLAYER("Slayer task");
+		SLAYER("Slayer task"),
+		/** The Gemstone Crab, while the player is at one of its mines: its clock, its shell and where it goes. */
+		GEMSTONE_CRAB("Gemstone Crab");
 
 		private final String label;
 

@@ -30,6 +30,8 @@ import com.codex.autopilot.core.SavingsGoal;
 import com.codex.autopilot.core.Session;
 import com.codex.autopilot.core.Settings;
 import com.codex.autopilot.core.SharedPlan;
+import com.codex.autopilot.core.CrabLog;
+import com.codex.autopilot.core.GemstoneCrab;
 import com.codex.autopilot.core.Slayer;
 import com.codex.autopilot.core.SlayerLog;
 import com.codex.autopilot.core.Tier;
@@ -98,7 +100,7 @@ import net.runelite.client.ui.overlay.OverlayManager;
 @PluginDescriptor(
 	name = "Codex Autopilot",
 	description = "One next step for your whole account: what is ready, what is about to go to waste and your pinned goal, in one order",
-	tags = {"next", "step", "todo", "birdhouse", "farming", "daily", "kingdom", "miscellania", "goal", "navigator", "sailing", "port", "slayer", "codex"}
+	tags = {"next", "step", "todo", "birdhouse", "farming", "daily", "kingdom", "miscellania", "goal", "navigator", "sailing", "port", "slayer", "gemstone", "crab", "codex"}
 )
 public class CodexAutopilotPlugin extends Plugin
 {
@@ -126,6 +128,10 @@ public class CodexAutopilotPlugin extends Plugin
 	private static final int RUMOUR_SAVE_TICKS = 500;
 	/** A task's pay is the Sailing xp that arrives within this many ticks of its slot emptying. */
 	private static final int PAID_TICKS = 2;
+	/** The crab's tallies are saved this often while the player is there, and on the way out. */
+	private static final int CRAB_SAVE_TICKS = 100;
+	/** The skills a fight with the crab trains. */
+	private static final Skill[] COMBAT = {Skill.ATTACK, Skill.STRENGTH, Skill.DEFENCE, Skill.RANGED, Skill.MAGIC, Skill.HITPOINTS};
 	/** The kitten's clock is saved this often while it follows; what the game says is saved at once. */
 	private static final int KITTEN_SAVE_TICKS = 200;
 	/** Codex Ledger saves often and its ledger is large: it is read again at most this often. */
@@ -199,6 +205,17 @@ public class CodexAutopilotPlugin extends Plugin
 	private Slayer.Account slayerAccount;
 	/** Game time, 600 ms a tick, that kills are timed by. */
 	private long gameMs;
+
+	/** The account's time at the Gemstone Crab, and the crab as seen; loaded from its save on first use. */
+	private CrabLog crab;
+	private boolean crabDirty;
+	/** The combat xp last seen, to count what the crab gives; -1 until read. */
+	private long combatXp = -1;
+	/**
+	 * The share of an NPC's health bar showing, 0 to 1, or -1 when it is not shown. The replays stand
+	 * in for it, as their game has no health bars.
+	 */
+	private Function<NPC, Double> barOf = CodexAutopilotPlugin::bar;
 
 	/** The account's kitten, read from the game; loaded from its save on first use. */
 	private KittenBook kitten;
@@ -323,6 +340,8 @@ public class CodexAutopilotPlugin extends Plugin
 		kittenDirty = false;
 		forgetPorts();
 		forgetSlayer();
+		saveCrab();
+		forgetCrab();
 		boardJson = null;
 		board = null;
 		bankJson = null;
@@ -357,7 +376,8 @@ public class CodexAutopilotPlugin extends Plugin
 		ticks++;
 		gameMs += 600;
 		boolean slain = watchSlayer();
-		if ((watchPorts() | slain) && ticks % EVALUATE_TICKS != 0)
+		boolean crabbed = watchCrab();
+		if ((watchPorts() | slain | crabbed) && ticks % EVALUATE_TICKS != 0)
 		{
 			evaluate();
 			return;
@@ -380,6 +400,15 @@ public class CodexAutopilotPlugin extends Plugin
 			return;
 		}
 		ChatMessageType type = event.getType();
+		if (config.gemstoneCrab() && (type == ChatMessageType.GAMEMESSAGE || type == ChatMessageType.SPAM)
+			&& crabLog().chat(event.getMessage()))
+		{
+			// What the game says is saved at once, as the kitten's is.
+			crabDirty = true;
+			saveCrab();
+			evaluate();
+			return;
+		}
 		boolean dialog = type == ChatMessageType.DIALOG;
 		if (!dialog && type != ChatMessageType.GAMEMESSAGE && type != ChatMessageType.MESBOX)
 		{
@@ -630,6 +659,115 @@ public class CodexAutopilotPlugin extends Plugin
 		return false;
 	}
 
+	/**
+	 * Looks for the Gemstone Crab each tick while the player is at one of its mines: where it is, its
+	 * bar, and the combat xp it gives. True when what the step says changed.
+	 */
+	private boolean watchCrab()
+	{
+		if (!config.gemstoneCrab() || configManager.getRSProfileKey() == null || client.getGameState() != GameState.LOGGED_IN)
+		{
+			if (crab != null && crab.getNear() != null)
+			{
+				crab.pause();
+				saveCrab();
+			}
+			combatXp = -1;
+			return false;
+		}
+		GemstoneCrab.Mine playerAt;
+		GemstoneCrab.Mine crabAt = null;
+		double bar = -1;
+		long xp;
+		try
+		{
+			Player me = client.getLocalPlayer();
+			WorldPoint at = me == null ? null : me.getWorldLocation();
+			playerAt = at == null ? null : GemstoneCrab.Mine.at(Tile.of(at.getX(), at.getY(), at.getPlane()));
+			if (playerAt == null && (crab == null || crab.getNear() == null))
+			{
+				// Nowhere near it: nothing to look at, and no xp of its.
+				combatXp = -1;
+				return false;
+			}
+			if (playerAt != null)
+			{
+				for (NPC npc : client.getTopLevelWorldView().npcs())
+				{
+					if (npc != null && npc.getId() == GemstoneCrab.CRAB)
+					{
+						WorldPoint w = npc.getWorldLocation();
+						crabAt = w == null ? null : GemstoneCrab.Mine.at(Tile.of(w.getX(), w.getY(), w.getPlane()));
+						Double b = barOf.apply(npc);
+						bar = b == null ? -1 : b;
+						break;
+					}
+				}
+			}
+			xp = 0;
+			for (Skill s : COMBAT)
+			{
+				xp += client.getSkillExperience(s);
+			}
+		}
+		catch (RuntimeException e)
+		{
+			return false;
+		}
+		CrabLog log = crabLog();
+		GemstoneCrab.Mine nearBefore = log.getNear();
+		GemstoneCrab.Mine mineBefore = log.getMine();
+		if (log.look(gameMs, crabAt, bar, playerAt))
+		{
+			crabDirty = true;
+		}
+		if (combatXp >= 0 && log.xp(xp - combatXp))
+		{
+			crabDirty = true;
+		}
+		combatXp = xp;
+		if (crabDirty && (ticks % CRAB_SAVE_TICKS == 0 || playerAt == null))
+		{
+			saveCrab();
+		}
+		return nearBefore != log.getNear() || mineBefore != log.getMine();
+	}
+
+	/** The share of an NPC's health bar showing, or -1 while the game shows none. */
+	private static Double bar(NPC npc)
+	{
+		int ratio = npc.getHealthRatio();
+		int scale = npc.getHealthScale();
+		return ratio < 0 || scale <= 0 ? -1d : Math.min(1d, (double) ratio / scale);
+	}
+
+	private CrabLog crabLog()
+	{
+		if (crab == null)
+		{
+			crab = CrabLog.parse(gson, Profile.safe((g, k) -> configManager.getRSProfileConfiguration(g, k),
+				CodexAutopilotConfig.GROUP, CrabLog.KEY));
+		}
+		return crab;
+	}
+
+	private void saveCrab()
+	{
+		if (crabDirty && crab != null && configManager.getRSProfileKey() != null)
+		{
+			crabDirty = false;
+			configManager.setRSProfileConfiguration(CodexAutopilotConfig.GROUP, CrabLog.KEY, crab.toJson(gson));
+		}
+	}
+
+	/** Another account, or a fresh start: what is saved is read again. */
+	private void forgetCrab()
+	{
+		crab = null;
+		crabDirty = false;
+		combatXp = -1;
+	}
+
 	/** Combat level, quests and diaries; the quests are read again only on the slow beat. */
 	private Slayer.Account slayerAccount()
 	{
@@ -816,6 +954,13 @@ public class CodexAutopilotPlugin extends Plugin
 				kittenDirty = true;
 			}
 			saveKitten();
+			if (crab != null)
+			{
+				// Out of the game: no time at the crab runs across the gap.
+				crab.pause();
+			}
+			saveCrab();
+			combatXp = -1;
 			// The slots are read afresh on the way back in; a hand-in is not measured across it.
 			portSeen = null;
 			// Nor is a kill timed across it.
@@ -861,6 +1006,11 @@ public class CodexAutopilotPlugin extends Plugin
 		}
 		kitten = null;
 		kittenDirty = false;
+		if (crabDirty && crab != null && last != null)
+		{
+			configManager.setConfiguration(CodexAutopilotConfig.GROUP, last, CrabLog.KEY, crab.toJson(gson));
+		}
+		forgetCrab();
 		hunterLevel = 0;
 		atFirstLight = false;
 		forgetPorts();
@@ -902,7 +1052,7 @@ public class CodexAutopilotPlugin extends Plugin
 		}
 		if (CodexAutopilotConfig.GROUP.equals(group) && (Pace.KEY.equals(event.getKey()) || SharedPlan.KEY.equals(event.getKey())
 			|| RumourBook.KEY.equals(event.getKey()) || PortLog.KEY.equals(event.getKey()) || KittenBook.KEY.equals(event.getKey())
-			|| SlayerLog.KEY.equals(event.getKey())))
+			|| SlayerLog.KEY.equals(event.getKey()) || CrabLog.KEY.equals(event.getKey())))
 		{
 			// Autopilot's own save of the pace or of the shared plan; nothing new to show.
 			return;
@@ -1012,6 +1162,7 @@ public class CodexAutopilotPlugin extends Plugin
 			.kitten(config.kitten())
 			.portTasks(config.portTasks())
 			.slayer(config.slayer())
+			.gemstoneCrab(config.gemstoneCrab())
 			.navigator(config.navigator())
 			.bankSteward(config.bankSteward())
 			.wayfinder(config.wayfinder())
@@ -1092,7 +1243,7 @@ public class CodexAutopilotPlugin extends Plugin
 			"true".equals(configManager.getConfiguration("runelite", MINIGAME_PILOT_KEY)), nextUp, s.isQuiet(), skipped,
 			sources(in, s, plan, loggedIn, now), budget, fit, fedBy,
 			s.isPortTasks() && in.ports != null ? in.ports.with(in.ports.getTasks()) : null,
-			s.isKitten() ? in.kitten : null, s.isSlayer() ? in.slayer : null);
+			s.isKitten() ? in.kitten : null, s.isSlayer() ? in.slayer : null, s.isGemstoneCrab() && loggedIn ? in.crab : null);
 		SwingUtilities.invokeLater(() -> p.update(view));
 	}
 
@@ -1166,6 +1317,11 @@ public class CodexAutopilotPlugin extends Plugin
 		{
 			SlayerLog log = slayerLog();
 			in.slayer = log.doesSlayer() ? log.copy() : null;
+		}
+		if (s.isGemstoneCrab())
+		{
+			CrabLog log = crabLog();
+			in.crab = log.isBlank() ? null : log.copy();
 		}
 		if (s.isPortTasks())
 		{
@@ -1280,6 +1436,7 @@ public class CodexAutopilotPlugin extends Plugin
 		out.add(portSource(in, s));
 		out.add(kittenSource(in, s));
 		out.add(slayerSource(in, s));
+		out.add(crabSource(in, s));
 		out.add(!s.isNavigator() ? off("Navigator")
 			: in.board == null ? new View.Source("Navigator", "No goals", false)
 			: new View.Source("Navigator", in.board.open() == 1 ? "1 goal" : in.board.open() + " goals", true));
@@ -1386,6 +1543,25 @@ public class CodexAutopilotPlugin extends Plugin
 			return new View.Source("Slayer", "No task", false);
 		}
 		return new View.Source("Slayer", log.getAmount() + " left", true);
+	}
+
+	private static View.Source crabSource(Advisor.Inputs in, Settings s)
+	{
+		if (!s.isGemstoneCrab())
+		{
+			return off("Gemstone Crab");
+		}
+		CrabLog log = in.crab;
+		if (log == null)
+		{
+			return new View.Source("Gemstone Crab", "Not seen", false);
+		}
+		long xp = log.xpPerHour();
+		if (log.getNear() != null)
+		{
+			return new View.Source("Gemstone Crab", xp >= 0 ? Format.number(xp) + " xp/hr" : "At " + log.getNear().getPhrase(), true);
+		}
+		return new View.Source("Gemstone Crab", xp >= 0 ? Format.number(xp) + " xp/hr" : "Not here", false);
 	}
 
 	private static View.Source off(String label)

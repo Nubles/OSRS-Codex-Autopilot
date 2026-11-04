@@ -15,7 +15,7 @@ import java.awt.geom.RoundRectangle2D;
 
 /**
  * A small engraved mark for each kind of step: a bird house, a tree, a sprout, a herb sprig, a hop
- * cone, an hourglass, a scroll, a crown, a star, a flag, a coin stack, a skull, a crate, a book, a paw print, an anchor, a cat's head and a cut gem. Drawn rather than taken from item sprites, so it reads the
+ * cone, an hourglass, a scroll, a crown, a star, a flag, a coin stack, a skull, a crate, a book, a paw print, an anchor, a cat's head, a cut gem and a crab. Drawn rather than taken from item sprites, so it reads the
  * same at any size and in the game view.
  */
 public final class Glyph
@@ -202,6 +202,8 @@ public final class Glyph
 				return catHead();
 			case SLAYER:
 				return gem();
+			case GEMSTONE_CRAB:
+				return crab();
 			default:
 			{
 				Area a = new Area(new Rectangle2D.Float(3, 1.5f, 1.6f, 13.5f));
@@ -255,6 +257,20 @@ public final class Glyph
 				g.draw(new Line2D.Float(14.8f, 11.2f, 11.4f, 11.8f));
 				g.draw(new Line2D.Float(14.6f, 13.2f, 11.4f, 12.6f));
 				break;
+			case GEMSTONE_CRAB:
+				// A gem set in its shell, and its two eyes.
+				g.setColor(Theme.mix(Theme.TEAL, Color.WHITE, 0.25));
+				Path2D facet = new Path2D.Float();
+				facet.moveTo(8, 7.6);
+				facet.lineTo(10.2, 9.8);
+				facet.lineTo(8, 12.2);
+				facet.lineTo(5.8, 9.8);
+				facet.closePath();
+				g.fill(facet);
+				g.setColor(Theme.alpha(Theme.INK_DEEP, 220));
+				g.fill(new Ellipse2D.Float(5.6f, 6.6f, 1.3f, 1.3f));
+				g.fill(new Ellipse2D.Float(9.1f, 6.6f, 1.3f, 1.3f));
+				break;
 			case SLAYER:
 				// The facets: the table's edge and the lines down to the point.
 				g.setStroke(new BasicStroke(0.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
@@ -304,6 +320,44 @@ public final class Glyph
 			default:
 				break;
 		}
+	}
+
+	/** A crab seen from above: a broad shell, two raised claws and three legs a side. */
+	static Shape crab()
+	{
+		Area a = new Area(new Ellipse2D.Float(2.6f, 6.2f, 10.8f, 7.6f));
+		// The claws, each a pincer opening upward on a short arm.
+		for (int side = -1; side <= 1; side += 2)
+		{
+			float cx = 8 + side * 4.6f;
+			Area claw = new Area(new Ellipse2D.Float(cx - 2.1f, 1.2f, 4.2f, 4.4f));
+			Path2D notch = new Path2D.Float();
+			notch.moveTo(cx, 3.6);
+			notch.lineTo(cx - 0.9, 0.8);
+			notch.lineTo(cx + 0.9, 0.8);
+			notch.closePath();
+			claw.subtract(new Area(notch));
+			a.add(claw);
+			Path2D arm = new Path2D.Float();
+			arm.moveTo(cx - 0.7 * side, 5.0);
+			arm.lineTo(cx + 0.7 * side, 5.0);
+			arm.lineTo(8 + side * 3.0, 7.6);
+			arm.lineTo(8 + side * 1.6, 7.6);
+			arm.closePath();
+			a.add(new Area(arm));
+			for (int leg = 0; leg < 3; leg++)
+			{
+				float y = 9.4f + leg * 1.7f;
+				Path2D l = new Path2D.Float();
+				l.moveTo(8 + side * 4.6f, y);
+				l.lineTo(8 + side * 7.4f, y + 1.4f);
+				l.lineTo(8 + side * 7.4f, y + 2.3f);
+				l.lineTo(8 + side * 4.2f, y + 1.2f);
+				l.closePath();
+				a.add(new Area(l));
+			}
+		}
+		return a;
 	}
 
 	/** A cut gem, the enchanted gem Slayer masters hand out: a flat table over a pointed pavilion. */
