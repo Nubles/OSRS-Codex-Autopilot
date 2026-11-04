@@ -532,6 +532,10 @@ public class CodexAutopilotPlugin extends Plugin
 	{
 		if (!config.portTasks() || configManager.getRSProfileKey() == null || client.getGameState() != GameState.LOGGED_IN)
 		{
+			// Not watching: what changes meanwhile is read afresh, never measured as a hand-in.
+			portSeen = null;
+			sailingXp = -1;
+			paidTicks = 0;
 			return false;
 		}
 		long xp;
