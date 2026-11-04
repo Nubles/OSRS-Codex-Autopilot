@@ -154,11 +154,24 @@ public interface CodexAutopilotConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "portTasks",
+		name = "Sailing port tasks",
+		description = "Your port tasks as one voyage: where to collect each task's crates and where to deliver them, in the fewest stops,"
+			+ " your bounties, and where to take more. Read from the game's own task slots and port task table",
+		section = SOURCES,
+		position = 6
+	)
+	default boolean portTasks()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 		keyName = "navigator",
 		name = "Codex Navigator goals",
 		description = "Add the next step toward the goals you pinned in Codex Navigator",
 		section = SOURCES,
-		position = 6
+		position = 7
 	)
 	default boolean navigator()
 	{
@@ -170,7 +183,7 @@ public interface CodexAutopilotConfig extends Config
 		name = "Codex Bank Steward bank",
 		description = "Check what a chore needs against the bank Codex Bank Steward last saw",
 		section = SOURCES,
-		position = 7
+		position = 8
 	)
 	default boolean bankSteward()
 	{

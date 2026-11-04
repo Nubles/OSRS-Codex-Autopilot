@@ -1,0 +1,56 @@
+# Two Sailing port tasks planned as one voyage, from taking them to handing one in.
+# Facts: the tasks are the wiki's (Courier tasks: "1 Sailing, 78 xp, Port Sarim board, Port Sarim to
+# The Pandemonium, Platebodies, 1" and "1 Sailing, 155 xp, Port Sarim board, The Pandemonium to Port
+# Sarim, Spices, 1"); 28 Sailing holds three tasks (Port tasks); crates are lost if you die, capsize
+# or teleport off the boat at sea (Port tasks). The slots are RuneLite's gameval varbits
+# PORT_TASK_SLOT_n_ID, _CARGO_TAKEN and _CARGO_DELIVERED, and VarPlayerID.PORT_TASKS_COMPLETED.
+# The replay's game has no cache tables, so what each task is comes from Autopilot's own save of
+# it (portTasksV1), the path it takes while the game's port task table is not loaded; the task ids
+# are the save's.
+# Saved before logging in, as it would be from the last session.
+saved portTasksV1 "{'version':1,'sailing':28,'completed':4,'tasks':[{'slot':0,'id':11,'name':'Port Sarim Platebodies','type':'COURIER','level':1,'boardDock':8587,'board':'Port Sarim','fromDock':8587,'from':'Port Sarim','toDock':8588,'to':'The Pandemonium','cargoItem':-1,'cargo':'Platebodies','amount':1},{'slot':1,'id':12,'name':'Port Sarim Spices','type':'COURIER','level':1,'boardDock':8587,'board':'Port Sarim','fromDock':8588,'from':'The Pandemonium','toDock':8587,'to':'Port Sarim','cargoItem':-1,'cargo':'Spices','amount':1}],'xp':{}}"
+include /replays/scenes/varrock.scene
+watch over plaque.shown.over
+watch why plaque.shown.why
+watch tier plaque.shown.tier
+watch paid portLog.xp
+watch done portLog.completed
+skill SAILING 28 11000
+varbit PORT_TASK_SLOT_0_ID 11
+varbit PORT_TASK_SLOT_1_ID 12
+varp PORT_TASKS_COMPLETED 4
+tick 5
+# Out with the platebodies, back with the spices: three stops, not four.
+expect key = port:voyage
+expect over = "Port tasks"
+expect title = "Collect platebodies at Port Sarim"
+expect why ~ "The Pandemonium"
+expect why ~ ": 2 tasks, 3 stops"
+expect tier = GOAL
+
+# The crate is taken from the ledger table: it is aboard, so finishing the voyage is a ready errand.
+varbit PORT_TASK_SLOT_0_CARGO_TAKEN 1
+tick 1
+expect title = "Deliver platebodies, collect spices at The Pandemonium"
+expect tier = READY
+expect why ~ "1 crate aboard, lost if you die, capsize or teleport off at sea"
+
+# Delivered: the slot empties as 78 Sailing xp arrives, and Autopilot learns what the task pays.
+varbit PORT_TASK_SLOT_0_CARGO_DELIVERED 1
+varbit PORT_TASK_SLOT_0_ID 0
+varbit PORT_TASK_SLOT_0_CARGO_TAKEN 0
+varbit PORT_TASK_SLOT_0_CARGO_DELIVERED 0
+varp PORT_TASKS_COMPLETED 5
+tick 1
+xp SAILING 11078
+tick 4
+expect title = "Collect spices at The Pandemonium"
+expect tier = GOAL
+expect why ~ "1 task, 2 stops; then take 2 more tasks at Port Sarim's notice board, where it ends"
+expect paid = {11=78}
+expect done = 5
+
+# Switched off: no port task step.
+config portTasks false
+tick 5
+expect title = null

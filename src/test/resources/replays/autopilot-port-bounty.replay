@@ -1,0 +1,55 @@
+# A bounty task counted down to its claim, and a cancelled courier task that teaches no xp.
+# Facts: Catherby's notice board offers an albatross bounty for 5 albatross beaks at 50 Sailing, and
+# any port master pays a bounty (OSRS wiki, Bounty tasks); 50 Sailing holds three tasks (Port tasks).
+# A slot's BOUNTY_TASK_ITEM_COUNTER_n holds the parts still wanted, as the Port Tasks plugin reads it
+# (RuneLite gameval VarbitID; the counter's meaning is the Port Tasks plugin's, a cross-check).
+# Courier: "1 Sailing, Port Sarim to The Pandemonium, Platebodies, 1" (OSRS wiki, Courier tasks).
+# The replay's game has no cache tables, so the tasks come from Autopilot's own save (portTasksV1).
+saved portTasksV1 "{'version':1,'sailing':50,'completed':12,'tasks':[{'slot':0,'id':40,'name':'Catherby Albatross Bounty','type':'BOUNTY','level':50,'boardDock':8593,'board':'Catherby','monster':'Albatross','itemId':-1,'item':'Albatross beak','need':5},{'slot':1,'id':11,'name':'Port Sarim Platebodies','type':'COURIER','level':1,'boardDock':8587,'board':'Port Sarim','fromDock':8587,'from':'Port Sarim','toDock':8588,'to':'The Pandemonium','cargoItem':-1,'cargo':'Platebodies','amount':1}],'xp':{}}"
+include /replays/scenes/varrock.scene
+watch over plaque.shown.over
+watch why plaque.shown.why
+watch tier plaque.shown.tier
+watch paid portLog.xp
+skill SAILING 50 101333
+varbit PORT_TASK_SLOT_0_ID 40
+varbit BOUNTY_TASK_ITEM_COUNTER_1 5
+varbit PORT_TASK_SLOT_1_ID 11
+varp PORT_TASKS_COMPLETED 12
+tick 5
+# The voyage leads; the bounty waits behind it.
+expect key = port:voyage
+expect why ~ "then take 1 more task at The Pandemonium's notice board"
+
+# The courier task is cancelled at a port master: no xp arrives, so nothing is learned.
+varbit PORT_TASK_SLOT_1_ID 0
+tick 5
+expect key = port:bounty:0
+expect over = "Bounty"
+expect title = "Albatross beak, 0 of 5"
+expect paid = {}
+
+# Three beaks drop: two still wanted.
+varbit BOUNTY_TASK_ITEM_COUNTER_1 2
+tick 1
+expect title = "Albatross beak, 3 of 5"
+expect tier = GOAL
+
+# The fifth: claim it at any port master.
+varbit BOUNTY_TASK_ITEM_COUNTER_1 0
+tick 1
+expect title = "Claim the albatross beak bounty"
+expect tier = READY
+expect why ~ "Any port master pays it"
+
+# Claimed: the slot empties as Sailing xp arrives (2,000 here, a stand-in: whatever arrives is learned),
+# and the next step is more tasks.
+varbit PORT_TASK_SLOT_0_ID 0
+varp PORT_TASKS_COMPLETED 13
+tick 1
+xp SAILING 103333
+tick 4
+expect paid = {40=2000}
+expect key = port:take
+expect title = "Take 3 more port tasks"
+expect why = "From any port's notice board: 50 Sailing holds 3"

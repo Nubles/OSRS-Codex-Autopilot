@@ -15,7 +15,7 @@ import java.awt.geom.RoundRectangle2D;
 
 /**
  * A small engraved mark for each kind of step: a bird house, a tree, a sprout, a herb sprig, a hop
- * cone, an hourglass, a scroll, a crown, a star, a flag, a coin stack, a skull, a crate, a book and a paw print. Drawn rather than taken from item sprites, so it reads the
+ * cone, an hourglass, a scroll, a crown, a star, a flag, a coin stack, a skull, a crate, a book, a paw print and an anchor. Drawn rather than taken from item sprites, so it reads the
  * same at any size and in the game view.
  */
 public final class Glyph
@@ -196,6 +196,8 @@ public final class Glyph
 				a.add(new Area(new Ellipse2D.Float(12f, 4.6f, 3.2f, 4.2f)));
 				return a;
 			}
+			case PORT_TASK:
+				return anchor();
 			default:
 			{
 				Area a = new Area(new Rectangle2D.Float(3, 1.5f, 1.6f, 13.5f));
@@ -271,6 +273,27 @@ public final class Glyph
 			default:
 				break;
 		}
+	}
+
+	/** An anchor: the ring, the stock across the shank, and the arms curving up to two flukes. */
+	static Shape anchor()
+	{
+		Area a = new Area(new Ellipse2D.Float(6, 0.6f, 4, 4));
+		a.subtract(new Area(new Ellipse2D.Float(7.2f, 1.8f, 1.6f, 1.6f)));
+		a.add(new Area(new Rectangle2D.Float(7.15f, 4.2f, 1.7f, 9.4f)));
+		a.add(new Area(new java.awt.geom.RoundRectangle2D.Float(4.2f, 5.4f, 7.6f, 1.6f, 1.4f, 1.4f)));
+		Path2D arms = new Path2D.Float();
+		arms.moveTo(1.6, 8.6);
+		arms.lineTo(3.8, 9.2);
+		arms.quadTo(4.6, 12.6, 8, 13.1);
+		arms.quadTo(11.4, 12.6, 12.2, 9.2);
+		arms.lineTo(14.4, 8.6);
+		arms.lineTo(13.6, 10.6);
+		arms.quadTo(12.2, 15.2, 8, 15.4);
+		arms.quadTo(3.8, 15.2, 2.4, 10.6);
+		arms.closePath();
+		a.add(new Area(arms));
+		return a;
 	}
 
 	private static Shape leaf(float bx, float by, int side)

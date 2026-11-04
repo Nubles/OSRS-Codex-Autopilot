@@ -4,6 +4,7 @@ import com.codex.autopilot.core.Budget;
 import com.codex.autopilot.core.Candidate;
 import com.codex.autopilot.core.Plan;
 import com.codex.autopilot.core.Tier;
+import com.codex.autopilot.core.Voyage;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -170,6 +171,10 @@ public class AutopilotPanel extends PluginPanel
 			}
 		}
 
+		if (view.ports != null && !view.steppingAside() && !view.quiet)
+		{
+			ports(list);
+		}
 		if (view.skipped || p.getSnoozed() > 0 || p.getQuiet() > 0)
 		{
 			list.space(2);
@@ -201,6 +206,23 @@ public class AutopilotPanel extends PluginPanel
 			list.space(2);
 			list.add(note((fit.getLeft() == 1 ? "1 more step waits" : fit.getLeft() + " more steps wait") + " for when you have longer."));
 		}
+	}
+
+	/** The voyage that carries the courier tasks, and every task in the slots. */
+	private void ports(StackPanel list)
+	{
+		Voyage voyage = Voyage.plan(view.ports.getTasks());
+		JComponent route = VoyageCard.route(voyage, WIDTH - 30);
+		list.space(2);
+		if (route != null)
+		{
+			int stops = voyage.getStops().size();
+			list.add(new SectionHeader("Voyage", stops == 1 ? "1 stop" : stops + " stops"));
+			list.add(route);
+			list.space(2);
+		}
+		list.add(new SectionHeader("Port tasks", VoyageCard.summary(view.ports)));
+		list.add(VoyageCard.tasks(view.ports, WIDTH - 30));
 	}
 
 	/** "I have 15 / 30 / 60 / Any": what the plan has to fit in. */

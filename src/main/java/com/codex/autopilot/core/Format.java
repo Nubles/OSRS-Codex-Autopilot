@@ -91,4 +91,18 @@ public final class Format
 	{
 		return number(n) + " " + (n == 1 ? one : many);
 	}
+
+	/** "dye", "dye and logs", "dye, logs and spices". */
+	public static String list(java.util.List<String> items)
+	{
+		if (items == null || items.isEmpty())
+		{
+			return "";
+		}
+		if (items.size() == 1)
+		{
+			return items.get(0);
+		}
+		return String.join(", ", items.subList(0, items.size() - 1)) + " and " + items.get(items.size() - 1);
+	}
 }

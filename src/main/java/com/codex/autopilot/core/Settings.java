@@ -10,6 +10,7 @@ public final class Settings
 	private boolean dailies = true;
 	private boolean kingdom = true;
 	private boolean rumours = true;
+	private boolean portTasks = true;
 	private boolean navigator = true;
 	private boolean bankSteward = true;
 	private boolean wayfinder = true;
@@ -60,6 +61,13 @@ public final class Settings
 	public Settings rumours(boolean v)
 	{
 		rumours = v;
+		return this;
+	}
+
+	/** The Sailing port tasks as steps. */
+	public Settings portTasks(boolean v)
+	{
+		portTasks = v;
 		return this;
 	}
 
@@ -189,6 +197,11 @@ public final class Settings
 	public boolean isRumours()
 	{
 		return rumours;
+	}
+
+	public boolean isPortTasks()
+	{
+		return portTasks;
 	}
 
 	public boolean isDailies()
