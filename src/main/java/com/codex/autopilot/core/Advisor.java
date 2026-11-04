@@ -6,6 +6,8 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.IntFunction;
+import java.util.function.IntToLongFunction;
 
 /**
  * Turns everything Autopilot reads into one ranked plan. Every source is optional: a missing or
@@ -39,6 +41,32 @@ public final class Advisor
 		public BankSnapshot bank;
 		/** The player's learned pace, or null to keep every estimate. */
 		public Pace pace;
+
+		// The rest of the Codex suite; each may be null when its app is missing or has shared nothing.
+		/** Codex Wayfinder's travel atlas, to price the journey to each step. */
+		public Atlas atlas;
+		/** Where the player stands, or null while logged out. */
+		public Tile here;
+		/** Money makers clocked by Codex Money Pilot, best paying first. */
+		public List<Earner> money = Collections.emptyList();
+		/** Codex Boss Pilot's pinned boss and trips. */
+		public BossLog bossLog;
+		/** What Codex Gear Roadmap is saving toward. */
+		public SavingsGoal goal;
+		/** What Codex Ledger counts the account holding. */
+		public Wealth wealth;
+		/** Codex Quartermaster's kits. */
+		public Kits kits;
+		/** The dailies as Codex Rounds last saw them, for while logged out. */
+		public List<DailyState> roundsDailies;
+		/** Codex Log Insight's wanted slots and counters. */
+		public WantedSlots wanted;
+		/** Today's price of an item, or 0 when not known; null to use Ledger's prices only. */
+		public IntToLongFunction prices;
+		/** An item's name, or null; for the collection log step. */
+		public IntFunction<String> names;
+		/** Ironmen cannot buy their upgrades, so no coins step is offered. */
+		public boolean ironman;
 
 		/** Reads every config-backed source; dailies come from the live game and are added by the caller. */
 		public static Inputs read(Profile profile, Gson gson, long now, boolean royalTrouble)
@@ -94,11 +122,133 @@ public final class Advisor
 		}
 		if (s.isDailies())
 		{
-			out.addAll(Dailies.candidates(in.dailies, s, bank, now));
+			if (in.dailies == null && s.isRoundsDailies() && in.roundsDailies != null)
+			{
+				// Logged out: the dailies as Codex Rounds last saw them today.
+				for (Candidate c : Dailies.candidates(in.roundsDailies, s, bank, now))
+				{
+					out.add(c.withNote(SEEN_BY_ROUNDS));
+				}
+			}
+			else
+			{
+				out.addAll(Dailies.candidates(in.dailies, s, bank, now));
+			}
 		}
 		if (s.isNavigator() && in.board != null)
 		{
 			out.addAll(in.board.candidates());
+		}
+		Inputs suite = s.isLedger() ? in : withoutLedger(in);
+		out.addAll(Suite.candidates(suite, s, bank, earners(in, s)));
+		return travel(out, in, s);
+	}
+
+	/** Shown on dailies read from Codex Rounds' memory while logged out. */
+	public static final String SEEN_BY_ROUNDS = "as Codex Rounds last saw them";
+
+	private static Inputs withoutLedger(Inputs in)
+	{
+		Inputs copy = new Inputs();
+		copy.goal = in.goal;
+		copy.bossLog = in.bossLog;
+		copy.kits = in.kits;
+		copy.wanted = in.wanted;
+		copy.prices = in.prices;
+		copy.names = in.names;
+		copy.ironman = in.ironman;
+		return copy;
+	}
+
+	/** Every money maker the settings allow: Money Pilot's clocked methods and Boss Pilot's bosses. */
+	public static List<Earner> earners(Inputs in, Settings s)
+	{
+		List<Earner> out = new ArrayList<>();
+		if (s.isMoneyPilot() && in.money != null)
+		{
+			out.addAll(in.money);
+		}
+		if (s.isBossPilot() && in.bossLog != null)
+		{
+			out.addAll(in.bossLog.earners());
+		}
+		return out;
+	}
+
+	/** Prices the journey to each step that has a place, when Codex Wayfinder shares its atlas. */
+	static List<Candidate> travel(List<Candidate> steps, Inputs in, Settings s)
+	{
+		if (!s.isWayfinder() || in.atlas == null)
+		{
+			return steps;
+		}
+		List<Candidate> out = new ArrayList<>(steps.size());
+		for (Candidate c : steps)
+		{
+			Trip trip;
+			try
+			{
+				trip = Travel.best(in.atlas, in.here, c.getTargets());
+			}
+			catch (RuntimeException e)
+			{
+				trip = null;
+			}
+			out.add(trip == null ? c : c.withTrip(trip));
+		}
+		return out;
+	}
+
+	/** The Codex apps whose data is in this plan, for the "Fed by" row, in suite order. */
+	public static List<String> fedBy(Inputs in, Settings s, List<Candidate> steps)
+	{
+		List<String> out = new ArrayList<>();
+		boolean travelled = false;
+		boolean roundsDailies = false;
+		for (Candidate c : steps)
+		{
+			travelled |= c.getTrip() != null;
+			roundsDailies |= c.getWhy() != null && c.getWhy().endsWith(SEEN_BY_ROUNDS);
+		}
+		if (s.isNavigator() && in.board != null)
+		{
+			out.add("Navigator");
+		}
+		if (s.isWayfinder() && in.atlas != null && (travelled || !in.atlas.getTeleports().isEmpty()))
+		{
+			out.add("Wayfinder");
+		}
+		if (s.isGearRoadmap() && in.goal != null)
+		{
+			out.add("Gear Roadmap");
+		}
+		if (s.isMoneyPilot() && in.money != null && !in.money.isEmpty())
+		{
+			out.add("Money Pilot");
+		}
+		if (s.isBossPilot() && in.bossLog != null)
+		{
+			out.add("Boss Pilot");
+		}
+		if (s.isQuartermaster() && in.kits != null)
+		{
+			out.add("Quartermaster");
+		}
+		if (s.isLogInsight() && in.wanted != null)
+		{
+			out.add("Log Insight");
+		}
+		if (s.isLedger() && in.wealth != null)
+		{
+			out.add("Ledger");
+		}
+		if (s.isBankSteward() && in.bank != null)
+		{
+			out.add("Bank Steward");
+		}
+		if (s.isRounds() || roundsDailies)
+		{
+			out.add("Rounds");
 		}
 		return out;
 	}

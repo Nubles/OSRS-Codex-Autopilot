@@ -2,23 +2,34 @@ package com.codex.autopilot;
 
 import com.codex.autopilot.core.Activity;
 import com.codex.autopilot.core.Advisor;
+import com.codex.autopilot.core.Atlas;
 import com.codex.autopilot.core.BankSnapshot;
+import com.codex.autopilot.core.BossLog;
 import com.codex.autopilot.core.Budget;
 import com.codex.autopilot.core.Candidate;
 import com.codex.autopilot.core.Dailies;
 import com.codex.autopilot.core.DailyState;
 import com.codex.autopilot.core.Format;
 import com.codex.autopilot.core.GoalBoard;
+import com.codex.autopilot.core.Earner;
 import com.codex.autopilot.core.Heads;
+import com.codex.autopilot.core.Kits;
+import com.codex.autopilot.core.MoneyRuns;
 import com.codex.autopilot.core.Pace;
 import com.codex.autopilot.core.PaceWatch;
 import com.codex.autopilot.core.Plan;
 import com.codex.autopilot.core.Profile;
 import com.codex.autopilot.core.Ranker;
+import com.codex.autopilot.core.RoundsDailies;
+import com.codex.autopilot.core.SavingsGoal;
 import com.codex.autopilot.core.Session;
 import com.codex.autopilot.core.Settings;
+import com.codex.autopilot.core.SharedPlan;
 import com.codex.autopilot.core.Tier;
+import com.codex.autopilot.core.Tile;
 import com.codex.autopilot.core.Vars;
+import com.codex.autopilot.core.WantedSlots;
+import com.codex.autopilot.core.Wealth;
 import com.codex.autopilot.overlay.StepPlaque;
 import com.codex.autopilot.ui.Actions;
 import com.codex.autopilot.ui.AutopilotPanel;
@@ -33,6 +44,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
 import net.runelite.api.Client;
@@ -44,10 +56,12 @@ import net.runelite.api.QuestState;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.Notifier;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.game.ItemManager;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.RuneScapeProfileChanged;
 import net.runelite.client.plugins.Plugin;
@@ -59,11 +73,14 @@ import net.runelite.client.ui.overlay.OverlayManager;
 /**
  * One next step for the whole account. Autopilot reads what RuneLite and the other Codex plugins
  * already know (Time Tracking's patches and bird houses, the Kingdom of Miscellania, the diary
- * dailies, Codex Navigator's goals and Codex Bank Steward's bank), ranks it all by what is lost
- * by waiting, and keeps the best step on a plaque and in its panel. It never clicks, changes
- * menus, writes another plugin's data or sends anything off the computer; the only things it
- * keeps are its own settings, among them the player's learned pace, and the only thing it sends
- * is a notification through RuneLite's own notifier.
+ * dailies, Codex Navigator's goals and Codex Bank Steward's bank, and what the rest of the suite
+ * shares: Wayfinder's teleports, Money Pilot's and Boss Pilot's rates, Gear Roadmap's saving goal,
+ * Ledger's coins, Quartermaster's kits, Rounds' dailies and Log Insight's wanted slots), ranks it
+ * all by what is lost by waiting and the time it takes to get there, and keeps the best step on a
+ * plaque and in its panel. It never clicks, changes menus, writes another plugin's data or sends
+ * anything off the computer; the only things it keeps are its own settings, among them the
+ * player's learned pace and its top steps shared for Codex Home, and the only thing it sends is a
+ * notification through RuneLite's own notifier.
  */
 @PluginDescriptor(
 	name = "Codex Autopilot",
@@ -84,6 +101,11 @@ public class CodexAutopilotPlugin extends Plugin
 	/** Settings that make chore steps come or go: a run in progress is dropped rather than timed when one changes. */
 	private static final Set<String> CHORE_KEYS = new HashSet<>(Arrays.asList("chores", "herbs", "hops", "learnPace"));
 	private static final String TIME_TRACKING = "timetracking";
+	/** Codex apps whose shared saves change the plan as soon as they change. Ledger is read on a slower beat. */
+	private static final Set<String> SUITE_GROUPS = new HashSet<>(Arrays.asList(Atlas.GROUP, MoneyRuns.GROUP, BossLog.GROUP,
+		SavingsGoal.GROUP, Kits.GROUP, RoundsDailies.GROUP, WantedSlots.GROUP));
+	/** Codex Ledger saves often and its ledger is large: it is read again at most this often. */
+	private static final long LEDGER_SECONDS = 60;
 
 	@Inject
 	private Client client;
@@ -109,6 +131,9 @@ public class CodexAutopilotPlugin extends Plugin
 	@Inject
 	private Notifier notifier;
 
+	@Inject
+	private ItemManager itemManager;
+
 	private final StepPlaque plaque = new StepPlaque();
 	private final Session session = new Session();
 	private final Heads heads = new Heads();
@@ -130,6 +155,53 @@ public class CodexAutopilotPlugin extends Plugin
 	private BankSnapshot bank;
 	private String paceJson;
 	private Pace pace;
+	private Tile here;
+	private boolean ironman;
+	private final Cached<Atlas> atlas = new Cached<>();
+	private final Cached<List<Earner>> money = new Cached<>();
+	private final Cached<BossLog> bossLog = new Cached<>();
+	private final Cached<SavingsGoal> goal = new Cached<>();
+	private final Cached<Wealth> wealth = new Cached<>();
+	private final Cached<Kits> kits = new Cached<>();
+	private final Cached<List<DailyState>> roundsDailies = new Cached<>();
+	private final Cached<WantedSlots> wanted = new Cached<>();
+	private long ledgerReadAt;
+	private final SharedPlan.Saver planSaver = new SharedPlan.Saver();
+	/** The plan as last shared, for the replays and tests to read. */
+	private SharedPlan shared;
+
+	/** One shared save, parsed again only when its text changes. */
+	private static final class Cached<T>
+	{
+		private String text;
+		private boolean read;
+		private T value;
+
+		T get(String json, Function<String, T> parse)
+		{
+			if (!read || !Objects.equals(json, text))
+			{
+				text = json;
+				read = true;
+				try
+				{
+					value = json == null ? null : parse.apply(json);
+				}
+				catch (RuntimeException e)
+				{
+					value = null;
+				}
+			}
+			return value;
+		}
+
+		void clear()
+		{
+			text = null;
+			read = false;
+			value = null;
+		}
+	}
 
 	@Provides
 	CodexAutopilotConfig provideConfig(ConfigManager configManager)
@@ -178,6 +250,24 @@ public class CodexAutopilotPlugin extends Plugin
 		bank = null;
 		paceJson = null;
 		pace = null;
+		here = null;
+		ironman = false;
+		clearSuite();
+	}
+
+	private void clearSuite()
+	{
+		atlas.clear();
+		money.clear();
+		bossLog.clear();
+		goal.clear();
+		wealth.clear();
+		kits.clear();
+		roundsDailies.clear();
+		wanted.clear();
+		ledgerReadAt = 0;
+		planSaver.reset();
+		shared = null;
 	}
 
 	// ---- Events ----
@@ -201,6 +291,7 @@ public class CodexAutopilotPlugin extends Plugin
 		{
 			dailies = null;
 			activity = Activity.NONE;
+			here = null;
 			// Out of sight: a run in progress cannot be timed across it.
 			watch.abandon();
 			evaluate();
@@ -232,6 +323,7 @@ public class CodexAutopilotPlugin extends Plugin
 			// Its learned pace is read afresh, never carried over from the last account.
 			pace = null;
 			paceJson = null;
+			clearSuite();
 			evaluate();
 		});
 	}
@@ -244,13 +336,13 @@ public class CodexAutopilotPlugin extends Plugin
 		{
 			watch.abandon();
 		}
-		if (CodexAutopilotConfig.GROUP.equals(group) && Pace.KEY.equals(event.getKey()))
+		if (CodexAutopilotConfig.GROUP.equals(group) && (Pace.KEY.equals(event.getKey()) || SharedPlan.KEY.equals(event.getKey())))
 		{
-			// Autopilot's own save of the pace; nothing new to show.
+			// Autopilot's own save of the pace or of the shared plan; nothing new to show.
 			return;
 		}
 		if (CodexAutopilotConfig.GROUP.equals(group) || TIME_TRACKING.equals(group) || GoalBoard.GROUP.equals(group)
-			|| BankSnapshot.GROUP.equals(group) || "kingdomofmiscellania".equals(group))
+			|| BankSnapshot.GROUP.equals(group) || "kingdomofmiscellania".equals(group) || SUITE_GROUPS.contains(group))
 		{
 			clientThread.invokeLater(this::evaluate);
 		}
@@ -292,6 +384,17 @@ public class CodexAutopilotPlugin extends Plugin
 			}
 		}
 		activity = readActivity();
+		Player me = client.getLocalPlayer();
+		WorldPoint at = me == null ? null : me.getWorldLocation();
+		here = at == null ? null : Tile.of(at.getX(), at.getY(), at.getPlane());
+		try
+		{
+			ironman = client.getVarbitValue(VarbitID.IRONMAN) > 0;
+		}
+		catch (RuntimeException e)
+		{
+			ironman = false;
+		}
 	}
 
 	private Activity readActivity()
@@ -324,6 +427,14 @@ public class CodexAutopilotPlugin extends Plugin
 			.kingdom(config.kingdom())
 			.navigator(config.navigator())
 			.bankSteward(config.bankSteward())
+			.wayfinder(config.wayfinder())
+			.moneyPilot(config.moneyPilot())
+			.gearRoadmap(config.gearRoadmap())
+			.ledger(config.ledger())
+			.quartermaster(config.quartermaster())
+			.bossPilot(config.bossPilot())
+			.roundsDailies(config.roundsDailies())
+			.logInsight(config.logInsight())
 			.quiet(config.quiet())
 			.goalFirst(config.goalFirst())
 			.approvalTarget(config.approvalTarget())
@@ -352,6 +463,7 @@ public class CodexAutopilotPlugin extends Plugin
 			in.bank = bank(profile);
 			in.pace = learn ? pace(profile) : null;
 			in.dailies = loggedIn ? dailies : null;
+			readSuite(in, profile, s, now, loggedIn);
 			all = Advisor.candidates(in, s, now);
 			plan = Ranker.rank(all, s, session, now);
 			nextUp = Advisor.nextUp(in, s, now);
@@ -361,10 +473,12 @@ public class CodexAutopilotPlugin extends Plugin
 		Budget.Fit fit = Budget.fit(plan, budget.getMinutes(), session);
 		Candidate top = budget == Budget.NONE || fit.isEmpty() ? plan.top() : fit.first();
 
+		List<String> fedBy = known ? Advisor.fedBy(in, s, plan.getSteps()) : new ArrayList<>();
 		if (known && loggedIn)
 		{
 			learn(all, top, now, learn);
 			announce(all, plan, now);
+			share(budget == Budget.NONE || fit.isEmpty() ? plan.getSteps() : fit.getSteps(), fedBy);
 		}
 
 		boolean aside = config.stepAside() && activity != Activity.NONE;
@@ -377,8 +491,82 @@ public class CodexAutopilotPlugin extends Plugin
 		}
 		View view = new View(loggedIn, known, plan, config.stepAside() ? activity : Activity.NONE,
 			"true".equals(configManager.getConfiguration("runelite", MINIGAME_PILOT_KEY)), nextUp, s.isQuiet(), skipped,
-			sources(in, s, plan, loggedIn, now), budget, fit);
+			sources(in, s, plan, loggedIn, now), budget, fit, fedBy);
 		SwingUtilities.invokeLater(() -> p.update(view));
+	}
+
+	/** Reads what the rest of the Codex suite shares, each parsed again only when its save changes. On the client thread. */
+	private void readSuite(Advisor.Inputs in, Profile profile, Settings s, long now, boolean loggedIn)
+	{
+		long nowMs = now * 1000;
+		in.here = loggedIn ? here : null;
+		in.ironman = loggedIn && ironman;
+		if (s.isWayfinder())
+		{
+			in.atlas = atlas.get(Profile.safe(profile, Atlas.GROUP, Atlas.KEY), json -> Atlas.parse(gson, json));
+		}
+		if (s.isMoneyPilot())
+		{
+			// The rate window moves on with the day, so the runs are worked out again each new day.
+			String json = Profile.safe(profile, MoneyRuns.GROUP, MoneyRuns.KEY);
+			in.money = money.get(json == null ? null : (now / 86_400) + "|" + json,
+				t -> MoneyRuns.parse(gson, t.substring(t.indexOf('|') + 1), nowMs));
+			if (in.money == null)
+			{
+				in.money = new ArrayList<>();
+			}
+		}
+		if (s.isBossPilot())
+		{
+			String pin = Profile.safe(profile, BossLog.GROUP, BossLog.PINNED_KEY);
+			String book = Profile.safe(profile, BossLog.GROUP, BossLog.LOGBOOK_KEY);
+			in.bossLog = bossLog.get(pin == null && book == null ? null : pin + "\u0000" + book, t -> BossLog.parse(gson, pin, book));
+		}
+		if (s.isGearRoadmap())
+		{
+			in.goal = goal.get(Profile.safe(profile, SavingsGoal.GROUP, SavingsGoal.KEY), json -> SavingsGoal.parse(gson, json));
+		}
+		if (s.isLedger())
+		{
+			if (now - ledgerReadAt >= LEDGER_SECONDS)
+			{
+				ledgerReadAt = now;
+				wealth.get(Profile.safe(profile, Wealth.GROUP, Wealth.KEY), json -> Wealth.parse(gson, json));
+			}
+			in.wealth = wealth.value;
+		}
+		if (s.isQuartermaster())
+		{
+			in.kits = kits.get(Profile.safe(profile, Kits.GROUP, Kits.KEY), json -> Kits.parse(gson, json));
+		}
+		if (s.isRoundsDailies() && !loggedIn)
+		{
+			String json = Profile.safe(profile, RoundsDailies.GROUP, RoundsDailies.KEY);
+			in.roundsDailies = roundsDailies.get(json == null ? null : (now / 86_400) + "|" + json,
+				t -> RoundsDailies.parse(gson, t.substring(t.indexOf('|') + 1), now));
+		}
+		if (s.isLogInsight())
+		{
+			in.wanted = wanted.get(Profile.safe(profile, WantedSlots.GROUP, WantedSlots.KEY), json -> WantedSlots.parse(gson, json));
+		}
+		in.prices = id -> itemManager.getItemPrice(id);
+		in.names = id -> itemManager.getItemComposition(id).getName();
+	}
+
+	/** Saves the top steps for Codex Home and the rest of the suite, when they change. On the client thread. */
+	private void share(List<Candidate> steps, List<String> fedBy)
+	{
+		if (!config.sharePlan())
+		{
+			return;
+		}
+		long nowMs = System.currentTimeMillis();
+		SharedPlan plan = SharedPlan.of(steps, fedBy, nowMs);
+		if (planSaver.due(plan, gson, nowMs))
+		{
+			shared = plan;
+			configManager.setRSProfileConfiguration(CodexAutopilotConfig.GROUP, SharedPlan.KEY, plan.toJson(gson));
+		}
 	}
 
 	/** Times the run being worked and keeps what it learns in Autopilot's own profile settings. On the client thread. */
@@ -472,6 +660,13 @@ public class CodexAutopilotPlugin extends Plugin
 			: in.bank == null ? new View.Source("Bank Steward", "No bank", false)
 			: new View.Source("Bank Steward", in.bank.getSavedAt() <= 0 ? "Bank known"
 				: Format.shortDuration(now - in.bank.getSavedAt() / 1000) + " ago", true));
+		out.add(!s.isWayfinder() ? off("Wayfinder")
+			: in.atlas == null ? new View.Source("Wayfinder", "No atlas", false)
+			: new View.Source("Wayfinder", Format.plural(in.atlas.getTeleports().size(), "teleport", "teleports"), true));
+		Earner best = Earner.best(Advisor.earners(in, s));
+		out.add(!s.isMoneyPilot() && !s.isBossPilot() ? off("Earning")
+			: best == null ? new View.Source("Earning", "No runs", false)
+			: new View.Source("Earning", "Best " + Format.number(best.getPerHour()) + "/hr", true));
 		long wasting = plan.count(Tier.WASTING);
 		out.add(new View.Source("At risk", wasting == 0 ? "Nothing" : String.valueOf(wasting), wasting > 0));
 		return out;

@@ -8,7 +8,9 @@ import java.util.List;
  * Puts every candidate step in one order. The bands come first: what is about to go to waste,
  * then ready chores, then the focused goal's next step, then other goals. Inside a band, losses
  * due soonest lead, then the chores that save the most per minute spent (a full set of bird
- * houses and seaweed together beats one grown calquat), then the goals with least left.
+ * houses and seaweed together beats one grown calquat), then the goals with least left. Minutes
+ * include the journey to the step's start when Codex Wayfinder shares its atlas, and what is still
+ * level after that goes to the quicker step, journey included.
  *
  * <p>With "goal first" on, ready chores that lose little by waiting (urgency under
  * {@link #GOAL_FIRST_BELOW}, such as grown trees, dailies with hours left or the kingdom) drop
@@ -74,6 +76,7 @@ public final class Ranker
 			.thenComparingDouble(c -> band(c, s))
 			.thenComparingLong(c -> c.getDeadline() > 0 ? c.getDeadline() : Long.MAX_VALUE)
 			.thenComparing(Comparator.comparingDouble(Candidate::density).reversed())
+			.thenComparingInt(Candidate::getTotalSeconds)
 			.thenComparing(Comparator.comparingInt(Candidate::getCount).reversed())
 			.thenComparing(Candidate::getKey);
 	}

@@ -15,7 +15,7 @@ import java.awt.geom.RoundRectangle2D;
 
 /**
  * A small engraved mark for each kind of step: a bird house, a tree, a sprout, a herb sprig, a hop
- * cone, an hourglass, a scroll, a crown, a star and a flag. Drawn rather than taken from item sprites, so it reads the
+ * cone, an hourglass, a scroll, a crown, a star, a flag, a coin stack, a skull, a crate and a book. Drawn rather than taken from item sprites, so it reads the
  * same at any size and in the game view.
  */
 public final class Glyph
@@ -141,6 +141,44 @@ public final class Glyph
 			}
 			case FOCUS_GOAL:
 				return star(8, 8.4f, 7, 2.9f, 5);
+			case EARN:
+			{
+				// A stack of three coins.
+				Area a = new Area(new Ellipse2D.Float(2, 10, 12, 4.6f));
+				a.add(new Area(new Rectangle2D.Float(2, 7.3f, 12, 5)));
+				a.add(new Area(new Ellipse2D.Float(2, 5, 12, 4.6f)));
+				a.add(new Area(new Rectangle2D.Float(3.5f, 2.6f, 9, 4.4f)));
+				a.add(new Area(new Ellipse2D.Float(3.5f, 0.8f, 9, 3.8f)));
+				return a;
+			}
+			case BOSS:
+			{
+				// A skull: the dome and the jaw.
+				Area a = new Area(new Ellipse2D.Float(2, 1, 12, 10.5f));
+				a.add(new Area(new RoundRectangle2D.Float(4.6f, 8, 6.8f, 6.8f, 2, 2)));
+				return a;
+			}
+			case RESTOCK:
+			{
+				// A supply crate with its lid.
+				Area a = new Area(new Rectangle2D.Float(2, 5.5f, 12, 9));
+				a.add(new Area(new Rectangle2D.Float(1.2f, 3, 13.6f, 3)));
+				return a;
+			}
+			case LOG:
+			{
+				// An open book.
+				Path2D p = new Path2D.Float();
+				p.moveTo(8, 4);
+				p.curveTo(6, 2.4, 3.5, 2.4, 1.2, 3.2);
+				p.lineTo(1.2, 13.6);
+				p.curveTo(3.5, 12.8, 6, 12.8, 8, 14.4);
+				p.curveTo(10, 12.8, 12.5, 12.8, 14.8, 13.6);
+				p.lineTo(14.8, 3.2);
+				p.curveTo(12.5, 2.4, 10, 2.4, 8, 4);
+				p.closePath();
+				return p;
+			}
 			default:
 			{
 				Area a = new Area(new Rectangle2D.Float(3, 1.5f, 1.6f, 13.5f));
@@ -180,6 +218,27 @@ public final class Glyph
 			case KINGDOM:
 				g.setColor(Theme.mix(Theme.TEAL, Color.WHITE, 0.3));
 				g.fill(new Ellipse2D.Float(7, 9.2f, 2, 2));
+				break;
+			case EARN:
+				g.draw(new Line2D.Float(3, 9.6f, 13, 9.6f));
+				g.draw(new Line2D.Float(4.5f, 5.4f, 11.5f, 5.4f));
+				break;
+			case BOSS:
+				g.setColor(Theme.alpha(Theme.INK_DEEP, 235));
+				g.fill(new Ellipse2D.Float(4.2f, 5, 3, 3.2f));
+				g.fill(new Ellipse2D.Float(8.8f, 5, 3, 3.2f));
+				g.draw(new Line2D.Float(6.8f, 11.6f, 6.8f, 14.4f));
+				g.draw(new Line2D.Float(9.2f, 11.6f, 9.2f, 14.4f));
+				break;
+			case RESTOCK:
+				g.draw(new Line2D.Float(2.6f, 6.2f, 13.4f, 13.8f));
+				g.draw(new Line2D.Float(13.4f, 6.2f, 2.6f, 13.8f));
+				break;
+			case LOG:
+				g.draw(new Line2D.Float(8, 4.4f, 8, 13.8f));
+				g.draw(new Line2D.Float(3, 6, 6.5f, 6.4f));
+				g.draw(new Line2D.Float(3, 8.4f, 6.5f, 8.8f));
+				g.draw(new Line2D.Float(9.5f, 6.4f, 13, 6));
 				break;
 			case HOPS_RUN:
 				// The overlapping bracts.

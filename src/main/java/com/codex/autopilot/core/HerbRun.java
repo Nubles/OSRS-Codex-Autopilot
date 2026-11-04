@@ -252,7 +252,7 @@ final class HerbRun
 		String bring = Bring.line(needs(kind == Candidate.Kind.HERB_RUN ? herbSeeds : 0, replant, bank), bank);
 		int item = produceItem(list, lead, kind == Candidate.Kind.HOPS_RUN ? ItemID.HAMMERSTONE_HOPS : ItemID.RANARR_WEED);
 		return new Candidate("chores:" + kind.name().toLowerCase(), kind, tier, over, title, why, bring,
-			minutes, urgency, deadline, patches, item);
+			minutes, urgency, deadline, patches, item).at(Where.tiles(list));
 	}
 
 	/** Seeds for the herb patches and compost for every patch replanted; a filled bottomless bucket covers the compost. */

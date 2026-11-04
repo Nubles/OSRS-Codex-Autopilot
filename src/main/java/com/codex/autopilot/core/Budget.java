@@ -111,7 +111,7 @@ public enum Budget
 			int total = 0;
 			for (Candidate c : ranked)
 			{
-				total += c.getMinutes();
+				total += c.getTotalMinutes();
 			}
 			return new Fit(new ArrayList<>(ranked), total, 0, 0);
 		}
@@ -126,14 +126,14 @@ public enum Budget
 		int shortest = 0;
 		for (Candidate c : order)
 		{
-			if (total + c.getMinutes() <= minutes)
+			if (total + c.getTotalMinutes() <= minutes)
 			{
 				chosen.add(c);
-				total += c.getMinutes();
+				total += c.getTotalMinutes();
 			}
-			else if (shortest == 0 || c.getMinutes() < shortest)
+			else if (shortest == 0 || c.getTotalMinutes() < shortest)
 			{
-				shortest = c.getMinutes();
+				shortest = c.getTotalMinutes();
 			}
 		}
 		return new Fit(chosen, total, ranked.size() - chosen.size(), shortest);

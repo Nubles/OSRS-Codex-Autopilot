@@ -11,6 +11,14 @@ public final class Settings
 	private boolean kingdom = true;
 	private boolean navigator = true;
 	private boolean bankSteward = true;
+	private boolean wayfinder = true;
+	private boolean moneyPilot = true;
+	private boolean gearRoadmap = true;
+	private boolean ledger = true;
+	private boolean quartermaster = true;
+	private boolean bossPilot = true;
+	private boolean roundsDailies = true;
+	private boolean logInsight = true;
 	private boolean quiet;
 	private boolean goalFirst;
 	private int approvalTarget = 90;
@@ -68,6 +76,54 @@ public final class Settings
 	public Settings bankSteward(boolean v)
 	{
 		bankSteward = v;
+		return this;
+	}
+
+	public Settings wayfinder(boolean v)
+	{
+		wayfinder = v;
+		return this;
+	}
+
+	public Settings moneyPilot(boolean v)
+	{
+		moneyPilot = v;
+		return this;
+	}
+
+	public Settings gearRoadmap(boolean v)
+	{
+		gearRoadmap = v;
+		return this;
+	}
+
+	public Settings ledger(boolean v)
+	{
+		ledger = v;
+		return this;
+	}
+
+	public Settings quartermaster(boolean v)
+	{
+		quartermaster = v;
+		return this;
+	}
+
+	public Settings bossPilot(boolean v)
+	{
+		bossPilot = v;
+		return this;
+	}
+
+	public Settings roundsDailies(boolean v)
+	{
+		roundsDailies = v;
+		return this;
+	}
+
+	public Settings logInsight(boolean v)
+	{
+		logInsight = v;
 		return this;
 	}
 
@@ -135,6 +191,46 @@ public final class Settings
 	public boolean isNavigator()
 	{
 		return navigator;
+	}
+
+	public boolean isWayfinder()
+	{
+		return wayfinder;
+	}
+
+	public boolean isMoneyPilot()
+	{
+		return moneyPilot;
+	}
+
+	public boolean isGearRoadmap()
+	{
+		return gearRoadmap;
+	}
+
+	public boolean isLedger()
+	{
+		return ledger;
+	}
+
+	public boolean isQuartermaster()
+	{
+		return quartermaster;
+	}
+
+	public boolean isBossPilot()
+	{
+		return bossPilot;
+	}
+
+	public boolean isRoundsDailies()
+	{
+		return roundsDailies;
+	}
+
+	public boolean isLogInsight()
+	{
+		return logInsight;
 	}
 
 	public boolean isBankSteward()

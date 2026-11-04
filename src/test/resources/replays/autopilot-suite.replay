@@ -1,0 +1,66 @@
+# The whole suite in one next step: Autopilot reads what the other Codex apps share and the plan uses
+# it. Codex Wayfinder's atlas (codexwayfinder/atlasV1) prices the journey to each step, Codex Gear
+# Roadmap's saving goal (codexgearroadmap/goal) and the loot an hour of Codex Boss Pilot's logged trips
+# (codexbosspilot/logbookV1) make an "earn it" step (Money Pilot's runs are dated, so they are tested in
+# SuiteTest, where the clock is fixed), and the top steps are shared for Codex Home under
+# codexautopilot/planV1. The saves below are written as their apps write them (Gson reads the
+# unquoted names). Facts: Zaff's battlestaves are a Varrock easy diary reward, open while
+# ZAFF_LAST_CLAIMED is 0 (OSRS wiki, "Varrock Diary"); the Varrock Teleport lands in Varrock's square
+# (Wayfinder's teleportation_spells table, 3213 3424). Item 20997 is the twisted bow (RuneLite ItemID).
+include /replays/scenes/varrock.scene
+watch via plaque.shown.trip.via
+watch seconds plaque.shown.trip.seconds
+watch first shared.steps.0.title
+watch travel shared.steps.0.travel
+watch second shared.steps.1.title
+watch fed shared.fedBy
+varbit VARROCK_DIARY_EASY_COMPLETE 1
+varbit ZAFF_LAST_CLAIMED 0
+
+# No other app yet: the daily, unpriced, and shared all the same.
+tick 6
+expect title = "Zaff's battlestaves"
+expect via = null
+expect first = "Zaff's battlestaves"
+expect travel = null
+
+# Wayfinder shares its atlas. Standing by Zaff's shop, the player is already there.
+saved-in codexwayfinder atlasV1 "{version:1,savedAt:1767225600000,walkSecondsPerTile:0.3,teleports:[{name:'Varrock Teleport',source:'Varrock Teleport',kind:SPELL,x:3213,y:3424,plane:0,seconds:5,carried:true,timed:false}],networks:{FAIRY_RING:false},timedTrips:0}"
+tick 5
+expect title = "Zaff's battlestaves"
+expect seconds = 0
+expect travel = "you're there"
+expect fed ~ Wayfinder
+
+# Out east of Varrock, 88 tiles from Zaff: the teleport (5 s and 10 tiles) beats the walk.
+at 3290 3495
+tick 5
+expect via = "Varrock Teleport"
+expect travel = "via Varrock Teleport, ~10s"
+
+# Gear Roadmap saves toward a twisted bow and Boss Pilot has logged a two hour Vorkath trip worth 6.8M:
+# an hour's sitting of it toward the bow, after the ready daily.
+item TWISTED_BOW "Twisted bow" price 1500000000
+saved-in codexgearroadmap goal "{name:'Twisted bow',ids:[20997]}"
+saved-in codexbosspilot logbookV1 "{version:1,bosses:{vorkath:{kc:312,best:58.2,trips:[{start:1767225000000,end:1767232200000,kills:20,loot:6800000}]}}}"
+tick 5
+expect title = "Zaff's battlestaves"
+expect second = "Earn 3.4M: Vorkath trips"
+expect fed ~ "Gear Roadmap"
+expect fed ~ "Boss Pilot"
+
+# Wayfinder's save is damaged: the step loses its way but not its place.
+saved-in codexwayfinder atlasV1 "{version:1,teleports:"
+tick 5
+expect title = "Zaff's battlestaves"
+expect via = null
+expect travel = null
+expect fed !~ Wayfinder
+expect second = "Earn 3.4M: Vorkath trips"
+
+# Told not to share, the shared plan stays as it was saved.
+config sharePlan false
+varbit ZAFF_LAST_CLAIMED 1
+tick 5
+expect title = "Earn 3.4M: Vorkath trips"
+expect first = "Zaff's battlestaves"
