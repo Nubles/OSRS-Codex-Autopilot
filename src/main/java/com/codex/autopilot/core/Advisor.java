@@ -71,6 +71,8 @@ public final class Advisor
 		public boolean rumourFromPlugin;
 		/** The account's kitten as Autopilot last saw it; null when the source is off. */
 		public KittenBook kitten;
+		/** The account's Slayer task and pace as last read; null when the source is off or nothing is known. */
+		public SlayerLog slayer;
 		/** The account's port tasks, read live or as last saved; null when none are known. */
 		public PortLog ports;
 		/** Ironmen cannot buy their upgrades, so no coins step is offered. */
@@ -166,6 +168,17 @@ public final class Advisor
 			catch (RuntimeException e)
 			{
 				// Leave the kitten out this time round.
+			}
+		}
+		if (s.isSlayer() && in.slayer != null)
+		{
+			try
+			{
+				out.addAll(Slayers.candidates(in.slayer));
+			}
+			catch (RuntimeException e)
+			{
+				// Leave the Slayer task out this time round.
 			}
 		}
 		if (s.isPortTasks() && in.ports != null)

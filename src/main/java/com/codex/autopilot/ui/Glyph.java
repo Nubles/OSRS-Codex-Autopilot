@@ -15,7 +15,7 @@ import java.awt.geom.RoundRectangle2D;
 
 /**
  * A small engraved mark for each kind of step: a bird house, a tree, a sprout, a herb sprig, a hop
- * cone, an hourglass, a scroll, a crown, a star, a flag, a coin stack, a skull, a crate, a book, a paw print, an anchor and a cat's head. Drawn rather than taken from item sprites, so it reads the
+ * cone, an hourglass, a scroll, a crown, a star, a flag, a coin stack, a skull, a crate, a book, a paw print, an anchor, a cat's head and a cut gem. Drawn rather than taken from item sprites, so it reads the
  * same at any size and in the game view.
  */
 public final class Glyph
@@ -200,6 +200,8 @@ public final class Glyph
 				return anchor();
 			case KITTEN:
 				return catHead();
+			case SLAYER:
+				return gem();
 			default:
 			{
 				Area a = new Area(new Rectangle2D.Float(3, 1.5f, 1.6f, 13.5f));
@@ -253,6 +255,16 @@ public final class Glyph
 				g.draw(new Line2D.Float(14.8f, 11.2f, 11.4f, 11.8f));
 				g.draw(new Line2D.Float(14.6f, 13.2f, 11.4f, 12.6f));
 				break;
+			case SLAYER:
+				// The facets: the table's edge and the lines down to the point.
+				g.setStroke(new BasicStroke(0.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+				g.draw(new Line2D.Float(1.6f, 6, 14.4f, 6));
+				g.draw(new Line2D.Float(5.4f, 2.2f, 4.6f, 6));
+				g.draw(new Line2D.Float(10.6f, 2.2f, 11.4f, 6));
+				g.draw(new Line2D.Float(4.6f, 6, 8, 14.6f));
+				g.draw(new Line2D.Float(11.4f, 6, 8, 14.6f));
+				g.draw(new Line2D.Float(8, 2.2f, 8, 6));
+				break;
 			case KINGDOM:
 				g.setColor(Theme.mix(Theme.TEAL, Color.WHITE, 0.3));
 				g.fill(new Ellipse2D.Float(7, 9.2f, 2, 2));
@@ -292,6 +304,19 @@ public final class Glyph
 			default:
 				break;
 		}
+	}
+
+	/** A cut gem, the enchanted gem Slayer masters hand out: a flat table over a pointed pavilion. */
+	static Shape gem()
+	{
+		Path2D p = new Path2D.Float();
+		p.moveTo(4.4, 2.2);
+		p.lineTo(11.6, 2.2);
+		p.lineTo(14.4, 6);
+		p.lineTo(8, 14.6);
+		p.lineTo(1.6, 6);
+		p.closePath();
+		return p;
 	}
 
 	/** A cat's head: a broad face and two pointed ears. */

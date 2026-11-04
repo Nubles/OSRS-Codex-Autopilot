@@ -12,6 +12,7 @@ public final class Settings
 	private boolean rumours = true;
 	private boolean kitten = true;
 	private boolean portTasks = true;
+	private boolean slayer = true;
 	private boolean navigator = true;
 	private boolean bankSteward = true;
 	private boolean wayfinder = true;
@@ -70,6 +71,18 @@ public final class Settings
 	{
 		rumours = v;
 		return this;
+	}
+
+	/** The Slayer task as a step. */
+	public Settings slayer(boolean v)
+	{
+		slayer = v;
+		return this;
+	}
+
+	public boolean isSlayer()
+	{
+		return slayer;
 	}
 
 	/** The Sailing port tasks as steps. */

@@ -92,6 +92,23 @@ What it reads is the game's own: the follower's npc id (kitten, cat or overgrown
   <img src="docs/screenshots/plaque-kitten.png" alt="The plaque asking to feed and stroke the kitten">
 </p>
 
+## Your Slayer task, with where to go and your own pace
+
+Inspired by RuneLite's Slayer plugin and the Plugin Hub's Slayer assistants, which show the task, how many are left and where to go. Autopilot puts the task into the account's one order and goes further: it times the task at your own kills an hour and tells you which master to ask next.
+
+- **The task, where and what to bring.** "Slayer task: Kurask, 87 left", with where they live ("Fremennik Slayer Dungeon, Iorwerth Dungeon or Kurask Lair") and what the fight needs ("Leaf-bladed weapons, broad ammunition or Magic Dart: nothing else hurts them"). With Konar, the area she sent you to, as the game names it. With Codex Wayfinder on, the journey is priced to the nearest of those places.
+- **Your own pace.** Every kill is timed from the one before it; a gap of more than five minutes (a bank trip, a break, a logout) is left out, so the rate is your kills an hour while on task. It is kept per task, for this account, and once twenty kills are timed the step says "~44 min (your pace)" and "at your 120 kills/hr".
+- **The next master.** Once the task is done: "New task from Duradel", the most demanding master your combat level, Slayer level and quests open, with what your next task in a row pays there ("your 10th in a row pays 75 points (5x); Konar pays 90"), or how many tasks until points start. Aya, Steve and Kuradal are named once the quest that brings them is done; the Western Provinces and Kourend & Kebos elite diaries raise Nieve's and Konar's points.
+- **The panel.** A Slayer section shows the tally slain, where, what to bring, your pace, the next master and your points and streak.
+
+Where and what to bring are written in only for the tasks checked against the OSRS wiki (rockslugs, lizards, banshees, cockatrice, harpie bug swarms, wall beasts, killerwatts, molanisks, basilisks, fever spiders, turoth, mutated zygomites, cave horrors, aberrant spectres, wyrms, dust devils, kurask, gargoyles, drakes, smoke devils and hydras); any other task shows its count, master and pace without a guess. The task, the amount, Konar's area, the master, the points and the streaks are read from the game's own values and tables, the way RuneLite's Slayer plugin reads them, and saved for while you are logged out. It never gives in-fight cues. **Slayer task** under Sources switches it off.
+
+<p align="center">
+  <img src="docs/screenshots/slayer-panel.png" width="225" alt="A kurask task with where to go, what to bring and the player's own pace">
+  <br>
+  <img src="docs/screenshots/plaque-slayer.png" alt="The plaque for a kurask task at the player's own pace">
+</p>
+
 ## What it does
 
 - **One step, always.** The plaque shows the best next step in gilt letters, what kind of step it is, about how long it takes, why it is first, and what to bring. Its edge takes the step's colour: ember when something is about to be lost, green for a ready chore, teal for your focused goal.
@@ -145,7 +162,7 @@ Every source is optional. Bird houses and the special patches, herb runs and hop
 
 ## Rules posture
 
-Codex Autopilot only reads what the game and RuneLite already know and draws a plaque and a panel. It does not click, type, change menus or menu entries, give boss or combat cues, read or write files (apart from the optional field notes below), or send anything over the network. Its notifications go through RuneLite's own notifier, on your computer. The only thing it saves is its own settings, including your learned pace (a few numbers per kind of run, kept with the rest of the plugin's settings for that account), your Hunter rumour as it last read it (`codexautopilot/rumourV1`; it reads game messages and the guild hunters' lines only, never other players' chat), your kitten as it last saw it (`codexautopilot/kittenV1`) and its top steps for the other Codex apps (`codexautopilot/planV1`, switch off with **Share the plan**). It never writes another plugin's data.
+Codex Autopilot only reads what the game and RuneLite already know and draws a plaque and a panel. It does not click, type, change menus or menu entries, give boss or combat cues, read or write files (apart from the optional field notes below), or send anything over the network. Its notifications go through RuneLite's own notifier, on your computer. The only thing it saves is its own settings, including your learned pace (a few numbers per kind of run, kept with the rest of the plugin's settings for that account), your Hunter rumour as it last read it (`codexautopilot/rumourV1`; it reads game messages and the guild hunters' lines only, never other players' chat), your kitten as it last saw it (`codexautopilot/kittenV1`), your Slayer task and kill pace (`codexautopilot/slayerV1`) and its top steps for the other Codex apps (`codexautopilot/planV1`, switch off with **Share the plan**). It never writes another plugin's data.
 
 ## Field notes
 

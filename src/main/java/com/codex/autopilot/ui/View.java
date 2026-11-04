@@ -5,6 +5,7 @@ import com.codex.autopilot.core.Budget;
 import com.codex.autopilot.core.Plan;
 import com.codex.autopilot.core.KittenBook;
 import com.codex.autopilot.core.PortLog;
+import com.codex.autopilot.core.SlayerLog;
 import java.util.Collections;
 import java.util.List;
 
@@ -49,6 +50,8 @@ public final class View
 	public final PortLog ports;
 	/** The account's kitten or cat, for its own section; null when none is known or the source is off. */
 	public final KittenBook kitten;
+	/** The account's Slayer task, for its own section; null when none is held or the source is off. */
+	public final SlayerLog slayer;
 
 	public View(boolean loggedIn, boolean known, Plan plan, Activity activity, boolean minigamePilot, String nextUp,
 		boolean quiet, boolean skipped, List<Source> sources)
@@ -78,6 +81,13 @@ public final class View
 		boolean quiet, boolean skipped, List<Source> sources, Budget budget, Budget.Fit fit, List<String> fedBy, PortLog ports,
 		KittenBook kitten)
 	{
+		this(loggedIn, known, plan, activity, minigamePilot, nextUp, quiet, skipped, sources, budget, fit, fedBy, ports, kitten, null);
+	}
+
+	public View(boolean loggedIn, boolean known, Plan plan, Activity activity, boolean minigamePilot, String nextUp,
+		boolean quiet, boolean skipped, List<Source> sources, Budget budget, Budget.Fit fit, List<String> fedBy, PortLog ports,
+		KittenBook kitten, SlayerLog slayer)
+	{
 		this.loggedIn = loggedIn;
 		this.known = known;
 		this.plan = plan == null ? Plan.EMPTY : plan;
@@ -92,6 +102,7 @@ public final class View
 		this.fedBy = fedBy == null ? Collections.emptyList() : fedBy;
 		this.ports = ports == null || ports.getTasks().isEmpty() ? null : ports;
 		this.kitten = kitten == null || kitten.isBlank() ? null : kitten;
+		this.slayer = slayer == null || !slayer.hasTask() && !slayer.doesSlayer() ? null : slayer;
 	}
 
 	/** Whether a time budget is set, so the panel shows what fits rather than everything. */
