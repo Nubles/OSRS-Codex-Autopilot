@@ -30,6 +30,8 @@ import com.codex.autopilot.core.SavingsGoal;
 import com.codex.autopilot.core.Session;
 import com.codex.autopilot.core.Settings;
 import com.codex.autopilot.core.SharedPlan;
+import com.codex.autopilot.core.Slayer;
+import com.codex.autopilot.core.SlayerLog;
 import com.codex.autopilot.core.Tier;
 import com.codex.autopilot.core.Tile;
 import com.codex.autopilot.core.Vars;
@@ -96,7 +98,7 @@ import net.runelite.client.ui.overlay.OverlayManager;
 @PluginDescriptor(
 	name = "Codex Autopilot",
 	description = "One next step for your whole account: what is ready, what is about to go to waste and your pinned goal, in one order",
-	tags = {"next", "step", "todo", "birdhouse", "farming", "daily", "kingdom", "miscellania", "goal", "navigator", "sailing", "port", "codex"}
+	tags = {"next", "step", "todo", "birdhouse", "farming", "daily", "kingdom", "miscellania", "goal", "navigator", "sailing", "port", "slayer", "codex"}
 )
 public class CodexAutopilotPlugin extends Plugin
 {
@@ -187,6 +189,16 @@ public class CodexAutopilotPlugin extends Plugin
 	private int paidTask;
 	private long paidFrom;
 	private int paidTicks;
+
+	/** The account's Slayer task and pace, read from the game; loaded from its save on first use. */
+	private SlayerLog slayer;
+	private SlayerCatalog slayerCatalog;
+	/** The Slayer values last seen, so a kill is noticed the tick it lands. */
+	private int[] slayerSeen;
+	/** The account's combat, Slayer level, quests and diaries, as the masters ask about them. */
+	private Slayer.Account slayerAccount;
+	/** Game time, 600 ms a tick, that kills are timed by. */
+	private long gameMs;
 
 	/** The account's kitten, read from the game; loaded from its save on first use. */
 	private KittenBook kitten;
@@ -310,6 +322,7 @@ public class CodexAutopilotPlugin extends Plugin
 		kitten = null;
 		kittenDirty = false;
 		forgetPorts();
+		forgetSlayer();
 		boardJson = null;
 		board = null;
 		bankJson = null;
@@ -342,7 +355,9 @@ public class CodexAutopilotPlugin extends Plugin
 	public void onGameTick(GameTick tick)
 	{
 		ticks++;
-		if (watchPorts() && ticks % EVALUATE_TICKS != 0)
+		gameMs += 600;
+		boolean slain = watchSlayer();
+		if ((watchPorts() | slain) && ticks % EVALUATE_TICKS != 0)
 		{
 			evaluate();
 			return;
@@ -524,6 +539,154 @@ public class CodexAutopilotPlugin extends Plugin
 	}
 
 	/**
+	 * Reads the Slayer task each tick, cheaply, and works out what changed only when a value did:
+	 * a count going down is a kill, timed from the last. True when the task changed.
+	 */
+	private boolean watchSlayer()
+	{
+		if (!config.slayer() || configManager.getRSProfileKey() == null || client.getGameState() != GameState.LOGGED_IN)
+		{
+			if (slayerSeen != null && slayer != null)
+			{
+				// Not watching: the next kill cannot be timed from the last one seen.
+				slayer.pause();
+			}
+			slayerSeen = null;
+			return false;
+		}
+		int[] seen;
+		try
+		{
+			seen = new int[]{
+				client.getVarpValue(net.runelite.api.gameval.VarPlayerID.SLAYER_COUNT),
+				client.getVarpValue(net.runelite.api.gameval.VarPlayerID.SLAYER_TARGET),
+				client.getVarbitValue(VarbitID.SLAYER_TARGET_BOSSID),
+				client.getVarpValue(net.runelite.api.gameval.VarPlayerID.SLAYER_AREA),
+				client.getVarpValue(net.runelite.api.gameval.VarPlayerID.SLAYER_COUNT_ORIGINAL),
+				client.getVarbitValue(VarbitID.SLAYER_MODIFIER_ID),
+				client.getVarbitValue(VarbitID.SLAYER_MODIFIER_VALUE),
+				client.getVarbitValue(VarbitID.SLAYER_MODIFIER_NEGATIVE),
+				client.getVarbitValue(VarbitID.SLAYER_MASTER),
+				client.getVarbitValue(VarbitID.SLAYER_POINTS),
+				client.getVarbitValue(VarbitID.SLAYER_TASKS_COMPLETED),
+				client.getVarbitValue(VarbitID.SLAYER_WILDERNESS_TASKS_COMPLETED),
+				client.getVarpValue(net.runelite.api.gameval.VarPlayerID.SLAYER_MORTIMER_TASKS_COMPLETED),
+				client.getRealSkillLevel(Skill.SLAYER),
+			};
+		}
+		catch (RuntimeException e)
+		{
+			return false;
+		}
+		Slayer.Account account = slayerAccount();
+		if (account == null || account.combat <= 0)
+		{
+			// The account's stats are not in yet.
+			return false;
+		}
+		int[] withAccount = Arrays.copyOf(seen, seen.length + 1);
+		withAccount[seen.length] = account.hashCode() * 31 + (account.lostCity ? 1 : 0) + (account.shilo ? 2 : 0)
+			+ (account.priestInPeril ? 4 : 0) + (account.wgs ? 8 : 0) + (account.mm2 ? 16 : 0) + (account.westernElite ? 32 : 0)
+			+ (account.kourendElite ? 64 : 0);
+		if (slayerSeen != null && Arrays.equals(withAccount, slayerSeen))
+		{
+			return false;
+		}
+		slayerSeen = withAccount;
+		if (slayerCatalog == null)
+		{
+			slayerCatalog = new SlayerCatalog(client);
+		}
+		SlayerLog.Reading r = new SlayerLog.Reading();
+		r.amount = seen[0];
+		r.taskId = seen[1];
+		r.bossId = seen[1] == Slayer.BOSS_TASK ? seen[2] : 0;
+		r.areaId = seen[3];
+		// The amount given, with a modifier's change, as RuneLite's Slayer plugin works it out.
+		r.initial = seen[4] + (seen[5] == 2 ? (seen[7] == 1 ? -seen[6] : seen[6]) : 0);
+		r.masterId = seen[8];
+		r.points = seen[9];
+		r.streak = seen[10];
+		r.wildStreak = seen[11];
+		r.mortimerStreak = seen[12];
+		account.slayer = seen[13];
+		r.account = account;
+		if (r.amount > 0)
+		{
+			r.row = slayerCatalog.row(r.taskId, seen[2]);
+			r.name = slayerCatalog.name(r.row);
+			r.area = slayerCatalog.area(r.areaId);
+		}
+		r.masters = slayerCatalog.masters();
+		r.gameMs = gameMs;
+		r.master = r.masters.get(r.masterId);
+		SlayerLog log = slayerLog();
+		if (log.update(r, System.currentTimeMillis()) && log.doesSlayer())
+		{
+			// An account that has never done Slayer is not written for.
+			configManager.setRSProfileConfiguration(CodexAutopilotConfig.GROUP, SlayerLog.KEY, log.toJson(gson));
+			return true;
+		}
+		return false;
+	}
+
+	/** Combat level, quests and diaries; the quests are read again only on the slow beat. */
+	private Slayer.Account slayerAccount()
+	{
+		Player me = client.getLocalPlayer();
+		int combat = me == null ? 0 : me.getCombatLevel();
+		if (combat <= 0)
+		{
+			return null;
+		}
+		if (slayerAccount == null || ticks % QUEST_TICKS == 0)
+		{
+			Slayer.Account a = new Slayer.Account();
+			a.priestInPeril = finished(Quest.PRIEST_IN_PERIL);
+			a.lostCity = finished(Quest.LOST_CITY);
+			a.shilo = finished(Quest.SHILO_VILLAGE);
+			a.wgs = finished(Quest.WHILE_GUTHIX_SLEEPS);
+			a.mm2 = finished(Quest.MONKEY_MADNESS_II);
+			a.westernElite = client.getVarbitValue(VarbitID.WESTERN_DIARY_ELITE_COMPLETE) > 0;
+			a.kourendElite = client.getVarbitValue(VarbitID.KOUREND_DIARY_ELITE_COMPLETE) > 0;
+			slayerAccount = a;
+		}
+		Slayer.Account a = slayerAccount.copy();
+		a.combat = combat;
+		return a;
+	}
+
+	private boolean finished(Quest quest)
+	{
+		try
+		{
+			return quest.getState(client) == QuestState.FINISHED;
+		}
+		catch (RuntimeException e)
+		{
+			return false;
+		}
+	}
+
+	private SlayerLog slayerLog()
+	{
+		if (slayer == null)
+		{
+			slayer = SlayerLog.parse(gson, Profile.safe((g, k) -> configManager.getRSProfileConfiguration(g, k),
+				CodexAutopilotConfig.GROUP, SlayerLog.KEY));
+		}
+		return slayer;
+	}
+
+	/** Another account, or a fresh start: what is saved is read again. */
+	private void forgetSlayer()
+	{
+		slayer = null;
+		slayerSeen = null;
+		slayerAccount = null;
+	}
+
+	/**
 	 * Reads the port task slots each tick, cheaply, and the whole of each task only when a slot
 	 * changes. A slot that empties as Sailing xp arrives was handed in: that xp is what the task pays.
 	 * True when the tasks changed.
@@ -655,6 +818,12 @@ public class CodexAutopilotPlugin extends Plugin
 			saveKitten();
 			// The slots are read afresh on the way back in; a hand-in is not measured across it.
 			portSeen = null;
+			// Nor is a kill timed across it.
+			slayerSeen = null;
+			if (slayer != null)
+			{
+				slayer.pause();
+			}
 			sailingXp = -1;
 			paidTicks = 0;
 			// Out of sight: a run in progress cannot be timed across it.
@@ -695,6 +864,7 @@ public class CodexAutopilotPlugin extends Plugin
 		hunterLevel = 0;
 		atFirstLight = false;
 		forgetPorts();
+		forgetSlayer();
 		session.clear();
 		heads.reset();
 		watch.abandon();
@@ -731,7 +901,8 @@ public class CodexAutopilotPlugin extends Plugin
 			watch.abandon();
 		}
 		if (CodexAutopilotConfig.GROUP.equals(group) && (Pace.KEY.equals(event.getKey()) || SharedPlan.KEY.equals(event.getKey())
-			|| RumourBook.KEY.equals(event.getKey()) || PortLog.KEY.equals(event.getKey()) || KittenBook.KEY.equals(event.getKey())))
+			|| RumourBook.KEY.equals(event.getKey()) || PortLog.KEY.equals(event.getKey()) || KittenBook.KEY.equals(event.getKey())
+			|| SlayerLog.KEY.equals(event.getKey())))
 		{
 			// Autopilot's own save of the pace or of the shared plan; nothing new to show.
 			return;
@@ -840,6 +1011,7 @@ public class CodexAutopilotPlugin extends Plugin
 			.rumours(config.rumours())
 			.kitten(config.kitten())
 			.portTasks(config.portTasks())
+			.slayer(config.slayer())
 			.navigator(config.navigator())
 			.bankSteward(config.bankSteward())
 			.wayfinder(config.wayfinder())
@@ -920,7 +1092,7 @@ public class CodexAutopilotPlugin extends Plugin
 			"true".equals(configManager.getConfiguration("runelite", MINIGAME_PILOT_KEY)), nextUp, s.isQuiet(), skipped,
 			sources(in, s, plan, loggedIn, now), budget, fit, fedBy,
 			s.isPortTasks() && in.ports != null ? in.ports.with(in.ports.getTasks()) : null,
-			s.isKitten() ? in.kitten : null);
+			s.isKitten() ? in.kitten : null, s.isSlayer() ? in.slayer : null);
 		SwingUtilities.invokeLater(() -> p.update(view));
 	}
 
@@ -989,6 +1161,11 @@ public class CodexAutopilotPlugin extends Plugin
 		{
 			KittenBook pet = kittenBook();
 			in.kitten = pet.isBlank() ? null : pet.copy();
+		}
+		if (s.isSlayer())
+		{
+			SlayerLog log = slayerLog();
+			in.slayer = log.doesSlayer() ? log.copy() : null;
 		}
 		if (s.isPortTasks())
 		{
@@ -1102,6 +1279,7 @@ public class CodexAutopilotPlugin extends Plugin
 		out.add(rumourSource(in, s));
 		out.add(portSource(in, s));
 		out.add(kittenSource(in, s));
+		out.add(slayerSource(in, s));
 		out.add(!s.isNavigator() ? off("Navigator")
 			: in.board == null ? new View.Source("Navigator", "No goals", false)
 			: new View.Source("Navigator", in.board.open() == 1 ? "1 goal" : in.board.open() + " goals", true));
@@ -1190,6 +1368,24 @@ public class CodexAutopilotPlugin extends Plugin
 			return new View.Source("Kitten", k.getHungry() > 0 ? "Hungry" : "Lonely", true);
 		}
 		return new View.Source("Kitten", "Following", true);
+	}
+
+	private static View.Source slayerSource(Advisor.Inputs in, Settings s)
+	{
+		if (!s.isSlayer())
+		{
+			return off("Slayer");
+		}
+		SlayerLog log = in.slayer;
+		if (log == null)
+		{
+			return new View.Source("Slayer", "Not seen", false);
+		}
+		if (!log.hasTask())
+		{
+			return new View.Source("Slayer", "No task", false);
+		}
+		return new View.Source("Slayer", log.getAmount() + " left", true);
 	}
 
 	private static View.Source off(String label)

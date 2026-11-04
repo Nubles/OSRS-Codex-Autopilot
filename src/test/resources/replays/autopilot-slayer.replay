@@ -1,0 +1,116 @@
+# A Slayer task followed through Autopilot: where to go and what to bring, timed at the player's
+# own kills an hour once twenty kills are timed, a bank trip left out of the pace, and the next
+# master to ask once it is done.
+# Facts: kurask live in the Fremennik Slayer Dungeon, Iorwerth Dungeon and the Kurask Lair, and
+# "can only be damaged with leaf-bladed weapons, broad ammunition, or the Magic Dart spell" (wiki,
+# Kurask). Nieve asks for 85 combat, Duradel for 100 combat, 50 Slayer and Shilo Village (wiki,
+# Slayer master); the replay's game has no quest states, so Shilo Village reads as not done and
+# Nieve is the master offered. Points: Nieve 12 a task, 60 on a 10th, Konar 18 and 90 (wiki,
+# Slayer points). The values are RuneLite's gameval VarPlayerID.SLAYER_COUNT, SLAYER_TARGET,
+# SLAYER_COUNT_ORIGINAL and VarbitID.SLAYER_MASTER, SLAYER_POINTS, SLAYER_TASKS_COMPLETED.
+# The replay's game has no cache tables, so the task's name and the master's id come from
+# Autopilot's own save (slayerV1), the path it takes while the game's tables are not loaded; the
+# task id 41 and master id 8 are the save's.
+saved slayerV1 "{'version':1,'taskId':41,'row':6258,'name':'Kurask','amount':150,'initial':150,'masterId':8,'master':'DURADEL','points':330,'streak':8,'masters':{'8':'DURADEL'}}"
+include /replays/scenes/varrock.scene
+watch over plaque.shown.over
+watch why plaque.shown.why
+watch bring plaque.shown.bring
+watch tier plaque.shown.tier
+watch paced plaque.shown.paced
+watch left slayer.amount
+skill ATTACK 99
+skill STRENGTH 99
+skill DEFENCE 99
+skill HITPOINTS 99
+skill RANGED 99
+skill MAGIC 99
+skill PRAYER 99
+skill SLAYER 87
+varp SLAYER_COUNT 150
+varp SLAYER_TARGET 41
+varp SLAYER_COUNT_ORIGINAL 150
+varbit SLAYER_MASTER 8
+varbit SLAYER_POINTS 330
+varbit SLAYER_TASKS_COMPLETED 8
+tick 5
+expect key = slayer:task
+expect over = "Slayer task"
+expect title = "Kurask, 150 left"
+expect why = "Fremennik Slayer Dungeon, Iorwerth Dungeon or Kurask Lair; for Duradel"
+expect bring = "Leaf-bladed weapons, broad ammunition or Magic Dart: nothing else hurts them"
+expect tier = GOAL
+expect paced = false
+
+# A kill every 30 seconds (50 ticks). The first only starts the clock; twenty more are timed.
+varp SLAYER_COUNT 149
+tick 50
+varp SLAYER_COUNT 148
+tick 50
+varp SLAYER_COUNT 147
+tick 50
+varp SLAYER_COUNT 146
+tick 50
+varp SLAYER_COUNT 145
+tick 50
+varp SLAYER_COUNT 144
+tick 50
+varp SLAYER_COUNT 143
+tick 50
+varp SLAYER_COUNT 142
+tick 50
+varp SLAYER_COUNT 141
+tick 50
+varp SLAYER_COUNT 140
+tick 50
+varp SLAYER_COUNT 139
+tick 50
+varp SLAYER_COUNT 138
+tick 50
+varp SLAYER_COUNT 137
+tick 50
+varp SLAYER_COUNT 136
+tick 50
+varp SLAYER_COUNT 135
+tick 50
+varp SLAYER_COUNT 134
+tick 50
+varp SLAYER_COUNT 133
+tick 50
+varp SLAYER_COUNT 132
+tick 50
+varp SLAYER_COUNT 131
+tick 50
+varp SLAYER_COUNT 130
+tick 50
+varp SLAYER_COUNT 129
+tick 50
+expect title = "Kurask, 129 left"
+expect left = 129
+expect why = "Fremennik Slayer Dungeon, Iorwerth Dungeon or Kurask Lair; at your 120 kills/hr; for Duradel"
+expect paced = true
+expect saved.slayerV1 ~ "kurask"
+
+# A ten minute bank trip (1000 ticks) is not counted against the pace.
+tick 1000
+varp SLAYER_COUNT 128
+tick 50
+varp SLAYER_COUNT 127
+tick 50
+expect why ~ "at your 120 kills/hr"
+
+# Done: the next master the account's levels open, and what the 9th task in a row pays there.
+varp SLAYER_COUNT 0
+varbit SLAYER_TASKS_COMPLETED 9
+varbit SLAYER_POINTS 345
+tick 5
+expect key = slayer:new
+expect over = "Slayer"
+expect title = "New task from Nieve"
+expect why = "The highest master your 126 combat reach; your 10th in a row pays 60 points (5x); Konar pays 90"
+expect left = 0
+
+# Switched off: no Slayer step.
+config slayer false
+tick 5
+expect title = null

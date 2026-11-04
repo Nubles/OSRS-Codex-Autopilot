@@ -39,7 +39,9 @@ public final class Candidate
 		/** Sailing port tasks: the voyage that collects and delivers the cargo, a bounty, or more tasks to take. */
 		PORT_TASK("Port tasks"),
 		/** The pet kitten: feed or stroke it before it runs off. */
-		KITTEN("Kitten");
+		KITTEN("Kitten"),
+		/** The Slayer task in hand, or the next one to get. */
+		SLAYER("Slayer task");
 
 		private final String label;
 

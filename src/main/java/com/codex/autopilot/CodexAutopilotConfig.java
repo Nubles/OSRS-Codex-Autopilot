@@ -180,11 +180,25 @@ public interface CodexAutopilotConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "slayer",
+		name = "Slayer task",
+		description = "Your Slayer task as a step: how many are left, where they live and what the fight needs, timed at your own"
+			+ " kills an hour (learned per task, for this account), then which master to ask for the next one and the points it pays."
+			+ " Read from the game's own task, master and points values",
+		section = SOURCES,
+		position = 8
+	)
+	default boolean slayer()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 		keyName = "navigator",
 		name = "Codex Navigator goals",
 		description = "Add the next step toward the goals you pinned in Codex Navigator",
 		section = SOURCES,
-		position = 8
+		position = 9
 	)
 	default boolean navigator()
 	{
@@ -196,7 +210,7 @@ public interface CodexAutopilotConfig extends Config
 		name = "Codex Bank Steward bank",
 		description = "Check what a chore needs against the bank Codex Bank Steward last saw",
 		section = SOURCES,
-		position = 9
+		position = 10
 	)
 	default boolean bankSteward()
 	{
