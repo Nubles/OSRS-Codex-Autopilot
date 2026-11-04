@@ -19,6 +19,7 @@ import com.codex.autopilot.core.MoneyRuns;
 import com.codex.autopilot.core.Pace;
 import com.codex.autopilot.core.PaceWatch;
 import com.codex.autopilot.core.Plan;
+import com.codex.autopilot.core.PortLog;
 import com.codex.autopilot.core.Profile;
 import com.codex.autopilot.core.Ranker;
 import com.codex.autopilot.core.RoundsDailies;
@@ -90,7 +91,7 @@ import net.runelite.client.ui.overlay.OverlayManager;
 @PluginDescriptor(
 	name = "Codex Autopilot",
 	description = "One next step for your whole account: what is ready, what is about to go to waste and your pinned goal, in one order",
-	tags = {"next", "step", "todo", "birdhouse", "farming", "daily", "kingdom", "miscellania", "goal", "navigator", "codex"}
+	tags = {"next", "step", "todo", "birdhouse", "farming", "daily", "kingdom", "miscellania", "goal", "navigator", "sailing", "port", "codex"}
 )
 public class CodexAutopilotPlugin extends Plugin
 {
@@ -116,6 +117,8 @@ public class CodexAutopilotPlugin extends Plugin
 	private static final String RUMOUR_COUNT = "hunter rumours";
 	/** The rumour's hunting time is saved this often while it runs; what the game says is saved at once. */
 	private static final int RUMOUR_SAVE_TICKS = 500;
+	/** A task's pay is the Sailing xp that arrives within this many ticks of its slot emptying. */
+	private static final int PAID_TICKS = 2;
 	/** Codex Ledger saves often and its ledger is large: it is read again at most this often. */
 	private static final long LEDGER_SECONDS = 60;
 
@@ -167,6 +170,16 @@ public class CodexAutopilotPlugin extends Plugin
 	private boolean rumourDirty;
 	private boolean atFirstLight;
 	private int hunterLevel;
+	/** The account's port tasks, read from the game each tick they change; loaded from its save on first use. */
+	private PortLog portLog;
+	private PortCatalog portCatalog;
+	/** The port task varbits last seen, so a change is noticed the tick it lands. */
+	private int[] portSeen;
+	private long sailingXp = -1;
+	/** A task whose slot just emptied, the xp before it, and the ticks left to see its pay arrive. */
+	private int paidTask;
+	private long paidFrom;
+	private int paidTicks;
 
 	// Parsed only when the saved text changes.
 	private String boardJson;
@@ -278,6 +291,7 @@ public class CodexAutopilotPlugin extends Plugin
 		rumourDirty = false;
 		atFirstLight = false;
 		hunterLevel = 0;
+		forgetPorts();
 		boardJson = null;
 		board = null;
 		bankJson = null;
@@ -310,6 +324,11 @@ public class CodexAutopilotPlugin extends Plugin
 	public void onGameTick(GameTick tick)
 	{
 		ticks++;
+		if (watchPorts() && ticks % EVALUATE_TICKS != 0)
+		{
+			evaluate();
+			return;
+		}
 		if (ticks % EVALUATE_TICKS != 0)
 		{
 			return;
@@ -384,6 +403,117 @@ public class CodexAutopilotPlugin extends Plugin
 		}
 	}
 
+	/**
+	 * Reads the port task slots each tick, cheaply, and the whole of each task only when a slot
+	 * changes. A slot that empties as Sailing xp arrives was handed in: that xp is what the task pays.
+	 * True when the tasks changed.
+	 */
+	private boolean watchPorts()
+	{
+		if (!config.portTasks() || configManager.getRSProfileKey() == null || client.getGameState() != GameState.LOGGED_IN)
+		{
+			return false;
+		}
+		long xp;
+		int[] seen = new int[PortLog.SLOTS * 4 + 1];
+		try
+		{
+			xp = client.getSkillExperience(Skill.SAILING);
+			for (int i = 0; i < PortLog.SLOTS; i++)
+			{
+				seen[i] = client.getVarbitValue(PortLog.SLOT_ID[i]);
+			}
+			PortLog.progress(client::getVarbitValue, seen, PortLog.SLOTS);
+			seen[seen.length - 1] = client.getVarpValue(net.runelite.api.gameval.VarPlayerID.PORT_TASKS_COMPLETED);
+		}
+		catch (RuntimeException e)
+		{
+			return false;
+		}
+		if (xp <= 0)
+		{
+			// The account's stats are not in yet; neither are its slots, likely.
+			return false;
+		}
+		PortLog log = portLog();
+		boolean dirty = false;
+		if (paidTicks > 0 && --paidTicks == 0)
+		{
+			dirty = log.paid(paidTask, (int) Math.min(Integer.MAX_VALUE, xp - paidFrom));
+		}
+		boolean changed = portSeen == null || !Arrays.equals(seen, portSeen);
+		if (portSeen != null && changed && paidTicks == 0)
+		{
+			int emptied = 0;
+			int task = 0;
+			for (int i = 0; i < PortLog.SLOTS; i++)
+			{
+				if (portSeen[i] > 0 && seen[i] != portSeen[i])
+				{
+					emptied++;
+					task = portSeen[i];
+				}
+			}
+			if (emptied == 1)
+			{
+				// The xp may land this tick or the next: measure from before the slot emptied.
+				paidTask = task;
+				paidFrom = sailingXp >= 0 ? sailingXp : xp;
+				paidTicks = PAID_TICKS;
+			}
+		}
+		sailingXp = xp;
+		if (changed)
+		{
+			portSeen = seen;
+			if (portCatalog == null)
+			{
+				portCatalog = new PortCatalog(client);
+			}
+			Vars vars = new Vars()
+			{
+				@Override
+				public int varbit(int id)
+				{
+					return client.getVarbitValue(id);
+				}
+
+				@Override
+				public int varp(int id)
+				{
+					return client.getVarpValue(id);
+				}
+			};
+			dirty |= log.update(log.read(vars, portCatalog), seen[seen.length - 1], client.getRealSkillLevel(Skill.SAILING),
+				System.currentTimeMillis());
+		}
+		if (dirty)
+		{
+			configManager.setRSProfileConfiguration(CodexAutopilotConfig.GROUP, PortLog.KEY, log.toJson(gson));
+		}
+		return changed;
+	}
+
+	private PortLog portLog()
+	{
+		if (portLog == null)
+		{
+			portLog = PortLog.parse(gson, Profile.safe((g, k) -> configManager.getRSProfileConfiguration(g, k),
+				CodexAutopilotConfig.GROUP, PortLog.KEY));
+		}
+		return portLog;
+	}
+
+	/** Another account, or a fresh start: nothing carries over but what is saved. */
+	private void forgetPorts()
+	{
+		portLog = null;
+		portSeen = null;
+		sailingXp = -1;
+		paidTicks = 0;
+		paidTask = 0;
+	}
+
 	@Subscribe
 	public void onGameStateChanged(GameStateChanged event)
 	{
@@ -393,6 +523,10 @@ public class CodexAutopilotPlugin extends Plugin
 			activity = Activity.NONE;
 			here = null;
 			saveRumour();
+			// The slots are read afresh on the way back in; a hand-in is not measured across it.
+			portSeen = null;
+			sailingXp = -1;
+			paidTicks = 0;
 			// Out of sight: a run in progress cannot be timed across it.
 			watch.abandon();
 			evaluate();
@@ -419,6 +553,7 @@ public class CodexAutopilotPlugin extends Plugin
 		rumourDirty = false;
 		hunterLevel = 0;
 		atFirstLight = false;
+		forgetPorts();
 		session.clear();
 		heads.reset();
 		watch.abandon();
@@ -455,7 +590,7 @@ public class CodexAutopilotPlugin extends Plugin
 			watch.abandon();
 		}
 		if (CodexAutopilotConfig.GROUP.equals(group) && (Pace.KEY.equals(event.getKey()) || SharedPlan.KEY.equals(event.getKey())
-			|| RumourBook.KEY.equals(event.getKey())))
+			|| RumourBook.KEY.equals(event.getKey()) || PortLog.KEY.equals(event.getKey())))
 		{
 			// Autopilot's own save of the pace or of the shared plan; nothing new to show.
 			return;
@@ -562,6 +697,7 @@ public class CodexAutopilotPlugin extends Plugin
 			.dailies(config.dailies())
 			.kingdom(config.kingdom())
 			.rumours(config.rumours())
+			.portTasks(config.portTasks())
 			.navigator(config.navigator())
 			.bankSteward(config.bankSteward())
 			.wayfinder(config.wayfinder())
@@ -640,7 +776,8 @@ public class CodexAutopilotPlugin extends Plugin
 		}
 		View view = new View(loggedIn, known, plan, config.stepAside() ? activity : Activity.NONE,
 			"true".equals(configManager.getConfiguration("runelite", MINIGAME_PILOT_KEY)), nextUp, s.isQuiet(), skipped,
-			sources(in, s, plan, loggedIn, now), budget, fit, fedBy);
+			sources(in, s, plan, loggedIn, now), budget, fit, fedBy,
+			s.isPortTasks() && in.ports != null ? in.ports.with(in.ports.getTasks()) : null);
 		SwingUtilities.invokeLater(() -> p.update(view));
 	}
 
@@ -704,6 +841,11 @@ public class CodexAutopilotPlugin extends Plugin
 			RumourBook plugin = own.isBlank() ? RumourBook.fromHunterRumours(profile) : null;
 			in.rumour = own.orElse(plugin).withDone(count(Profile.safe(profile, KILLCOUNT, RUMOUR_COUNT)));
 			in.rumourFromPlugin = plugin != null && plugin.getCreature() != null;
+		}
+		if (s.isPortTasks())
+		{
+			PortLog log = portLog();
+			in.ports = log.doesPortTasks() || !log.getTasks().isEmpty() ? log : null;
 		}
 		in.prices = id -> itemManager.getItemPrice(id);
 		in.names = id -> itemManager.getItemComposition(id).getName();
@@ -810,6 +952,7 @@ public class CodexAutopilotPlugin extends Plugin
 			: in.kingdom == null ? new View.Source("Kingdom", "Not seen", false)
 			: new View.Source("Kingdom", in.kingdom.approvalPercent() + "% approval", true));
 		out.add(rumourSource(in, s));
+		out.add(portSource(in, s));
 		out.add(!s.isNavigator() ? off("Navigator")
 			: in.board == null ? new View.Source("Navigator", "No goals", false)
 			: new View.Source("Navigator", in.board.open() == 1 ? "1 goal" : in.board.open() + " goals", true));
@@ -854,6 +997,20 @@ public class CodexAutopilotPlugin extends Plugin
 			return new View.Source("Rumour", known ? "None held" : "Not seen", false);
 		}
 		return new View.Source("Rumour", r.hasPart() ? "Part found" : r.getCreature().getName(), true);
+	}
+
+	private static View.Source portSource(Advisor.Inputs in, Settings s)
+	{
+		if (!s.isPortTasks())
+		{
+			return off("Port tasks");
+		}
+		PortLog log = in.ports;
+		if (log == null || log.getTasks().isEmpty())
+		{
+			return new View.Source("Port tasks", log != null && log.doesPortTasks() ? "None held" : "Not seen", false);
+		}
+		return new View.Source("Port tasks", Format.plural(log.getTasks().size(), "task", "tasks"), true);
 	}
 
 	private static View.Source off(String label)

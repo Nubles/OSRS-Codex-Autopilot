@@ -55,6 +55,25 @@ There is no varbit for the rumour, so it is read from what the game says: a guil
   <img src="docs/screenshots/plaque-rumour.png" alt="The plaque for a grey chinchompa rumour">
 </p>
 
+## Your port tasks, as one voyage
+
+Inspired by the Port Tasks plugin, which a quarter of a million players use to find their way between ports. Autopilot plans the tasks in your slots as one voyage and puts it in the account's one order, beside the bird houses, the dailies and your goals.
+
+- **One voyage, the fewest stops.** Every courier task in hand is planned together: collect each task's crates at its ledger table, then deliver them, with every port called at once for everything it can do. Two tasks bound for the same port share the stop; cargo waiting where another is delivered is collected on the same call. The step is the next stop ("Deliver platebodies, collect spices at The Pandemonium") with the whole route ("Musa Point → The Pandemonium → Port Sarim: 3 tasks, 3 stops").
+- **Crates aboard come first.** The game loses crates in the hold if you die, capsize or teleport off the boat at sea, so once a crate is taken, finishing the voyage is a ready errand rather than a goal, and the step says how many crates are at risk.
+- **Bounties.** "Albatross beak, 3 of 5", counted from the game; once all are in hand, "Claim the albatross beak bounty" at any port master.
+- **More tasks where you end up.** With slots open, the voyage says "then take 2 more tasks at The Pandemonium's notice board, where it ends" when that port has one; with no voyage under way, "Take 3 more port tasks" is a step of its own.
+- **Your own pay, never a guess.** When a slot empties as Sailing xp arrives, Autopilot notes what that task paid, and shows it next time ("they paid you 322 Sailing xp last time"). A task you have not handed in shows no xp rather than a figure that may be out of date.
+- **The chart in the panel.** A Voyage section draws the stops down a gilt rail, the next one lit, and a Port tasks section lists every task, where it goes, how far along it is and the slots in use.
+
+Everything about a task (its name, ports, cargo and amount, or the bounty's creature, part and count) is read from the game's own port task and docking point tables, and its progress from the task slots' varbits, so tasks added or changed by an update read as the game has them. It is saved for while you are logged out. **Sailing port tasks** under Sources switches it off.
+
+<p align="center">
+  <img src="docs/screenshots/port-tasks-panel.png" width="225" alt="A voyage of three courier tasks and a bounty">
+  <br>
+  <img src="docs/screenshots/plaque-port-tasks.png" alt="The plaque for the next stop of the voyage">
+</p>
+
 ## What it does
 
 - **One step, always.** The plaque shows the best next step in gilt letters, what kind of step it is, about how long it takes, why it is first, and what to bring. Its edge takes the step's colour: ember when something is about to be lost, green for a ready chore, teal for your focused goal.

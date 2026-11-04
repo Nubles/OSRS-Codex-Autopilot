@@ -69,6 +69,8 @@ public final class Advisor
 		public RumourBook rumour;
 		/** True when the rumour is the Hunter Rumours plugin's, not read by Autopilot itself. */
 		public boolean rumourFromPlugin;
+		/** The account's port tasks, read live or as last saved; null when none are known. */
+		public PortLog ports;
 		/** Ironmen cannot buy their upgrades, so no coins step is offered. */
 		public boolean ironman;
 
@@ -151,6 +153,17 @@ public final class Advisor
 			catch (RuntimeException e)
 			{
 				// Leave the rumour out this time round.
+			}
+		}
+		if (s.isPortTasks() && in.ports != null)
+		{
+			try
+			{
+				out.addAll(PortTasks.candidates(in.ports));
+			}
+			catch (RuntimeException e)
+			{
+				// Leave the port tasks out this time round.
 			}
 		}
 		if (s.isNavigator() && in.board != null)

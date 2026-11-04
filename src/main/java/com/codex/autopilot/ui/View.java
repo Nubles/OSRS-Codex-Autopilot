@@ -3,6 +3,7 @@ package com.codex.autopilot.ui;
 import com.codex.autopilot.core.Activity;
 import com.codex.autopilot.core.Budget;
 import com.codex.autopilot.core.Plan;
+import com.codex.autopilot.core.PortLog;
 import java.util.Collections;
 import java.util.List;
 
@@ -43,6 +44,8 @@ public final class View
 	public final Budget.Fit fit;
 	/** The Codex apps whose data is in the plan, such as "Wayfinder" and "Money Pilot". */
 	public final List<String> fedBy;
+	/** The account's port tasks, for their own section; null when none are held or the source is off. */
+	public final PortLog ports;
 
 	public View(boolean loggedIn, boolean known, Plan plan, Activity activity, boolean minigamePilot, String nextUp,
 		boolean quiet, boolean skipped, List<Source> sources)
@@ -59,6 +62,12 @@ public final class View
 	public View(boolean loggedIn, boolean known, Plan plan, Activity activity, boolean minigamePilot, String nextUp,
 		boolean quiet, boolean skipped, List<Source> sources, Budget budget, Budget.Fit fit, List<String> fedBy)
 	{
+		this(loggedIn, known, plan, activity, minigamePilot, nextUp, quiet, skipped, sources, budget, fit, fedBy, null);
+	}
+
+	public View(boolean loggedIn, boolean known, Plan plan, Activity activity, boolean minigamePilot, String nextUp,
+		boolean quiet, boolean skipped, List<Source> sources, Budget budget, Budget.Fit fit, List<String> fedBy, PortLog ports)
+	{
 		this.loggedIn = loggedIn;
 		this.known = known;
 		this.plan = plan == null ? Plan.EMPTY : plan;
@@ -71,6 +80,7 @@ public final class View
 		this.budget = budget == null ? Budget.NONE : budget;
 		this.fit = fit == null ? Budget.Fit.NONE : fit;
 		this.fedBy = fedBy == null ? Collections.emptyList() : fedBy;
+		this.ports = ports == null || ports.getTasks().isEmpty() ? null : ports;
 	}
 
 	/** Whether a time budget is set, so the panel shows what fits rather than everything. */

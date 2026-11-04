@@ -108,7 +108,8 @@ public final class StepCard
 		{
 			return "your pace";
 		}
-		return c.getKind().isChore() || Rumours.HUNT.equals(c.getKey()) ? "estimate" : null;
+		return c.getKind().isChore() || Rumours.HUNT.equals(c.getKey())
+			|| com.codex.autopilot.core.PortTasks.VOYAGE.equals(c.getKey()) ? "estimate" : null;
 	}
 
 	/** The lead step's head: the mark in its medallion, what kind of step, its tier and how long. */

@@ -35,7 +35,9 @@ public final class Candidate
 		/** A collection log slot marked wanted in Codex Log Insight. */
 		LOG("Collection log"),
 		/** The Hunter Guild rumour: finish it, hand in its rare part, or ask for a new one. */
-		RUMOUR("Hunter rumour");
+		RUMOUR("Hunter rumour"),
+		/** Sailing port tasks: the voyage that collects and delivers the cargo, a bounty, or more tasks to take. */
+		PORT_TASK("Port tasks");
 
 		private final String label;
 
