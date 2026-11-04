@@ -15,7 +15,7 @@ import java.awt.geom.RoundRectangle2D;
 
 /**
  * A small engraved mark for each kind of step: a bird house, a tree, a sprout, a herb sprig, a hop
- * cone, an hourglass, a scroll, a crown, a star, a flag, a coin stack, a skull, a crate, a book, a paw print and an anchor. Drawn rather than taken from item sprites, so it reads the
+ * cone, an hourglass, a scroll, a crown, a star, a flag, a coin stack, a skull, a crate, a book, a paw print, an anchor and a cat's head. Drawn rather than taken from item sprites, so it reads the
  * same at any size and in the game view.
  */
 public final class Glyph
@@ -198,6 +198,8 @@ public final class Glyph
 			}
 			case PORT_TASK:
 				return anchor();
+			case KITTEN:
+				return catHead();
 			default:
 			{
 				Area a = new Area(new Rectangle2D.Float(3, 1.5f, 1.6f, 13.5f));
@@ -233,6 +235,23 @@ public final class Glyph
 				g.draw(new Line2D.Float(5.5f, 6, 10.5f, 6));
 				g.draw(new Line2D.Float(5.5f, 8.5f, 10.5f, 8.5f));
 				g.draw(new Line2D.Float(5.5f, 11, 9, 11));
+				break;
+			case KITTEN:
+				// Eyes, a nose and whiskers.
+				g.setColor(Theme.alpha(Theme.INK_DEEP, 235));
+				g.fill(new Ellipse2D.Float(5, 8.2f, 1.9f, 2.3f));
+				g.fill(new Ellipse2D.Float(9.1f, 8.2f, 1.9f, 2.3f));
+				Path2D nose = new Path2D.Float();
+				nose.moveTo(7.2, 11.4);
+				nose.lineTo(8.8, 11.4);
+				nose.lineTo(8, 12.3);
+				nose.closePath();
+				g.fill(nose);
+				g.setStroke(new BasicStroke(0.55f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+				g.draw(new Line2D.Float(1.2f, 11.2f, 4.6f, 11.8f));
+				g.draw(new Line2D.Float(1.4f, 13.2f, 4.6f, 12.6f));
+				g.draw(new Line2D.Float(14.8f, 11.2f, 11.4f, 11.8f));
+				g.draw(new Line2D.Float(14.6f, 13.2f, 11.4f, 12.6f));
 				break;
 			case KINGDOM:
 				g.setColor(Theme.mix(Theme.TEAL, Color.WHITE, 0.3));
@@ -273,6 +292,23 @@ public final class Glyph
 			default:
 				break;
 		}
+	}
+
+	/** A cat's head: a broad face and two pointed ears. */
+	static Shape catHead()
+	{
+		Area a = new Area(new Ellipse2D.Float(2.2f, 5, 11.6f, 10));
+		Path2D ears = new Path2D.Float();
+		ears.moveTo(2.6, 9);
+		ears.lineTo(2.8, 1.4);
+		ears.lineTo(7, 5.6);
+		ears.closePath();
+		ears.moveTo(13.4, 9);
+		ears.lineTo(13.2, 1.4);
+		ears.lineTo(9, 5.6);
+		ears.closePath();
+		a.add(new Area(ears));
+		return a;
 	}
 
 	/** An anchor: the ring, the stock across the shank, and the arms curving up to two flukes. */

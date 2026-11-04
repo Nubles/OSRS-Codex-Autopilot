@@ -171,6 +171,12 @@ public class AutopilotPanel extends PluginPanel
 			}
 		}
 
+		if (view.kitten != null && !view.steppingAside() && !view.quiet)
+		{
+			list.space(2);
+			list.add(new SectionHeader("Kitten", KittenCard.summary(view.kitten)));
+			list.add(KittenCard.card(view.kitten, System.currentTimeMillis(), WIDTH - 30));
+		}
 		if (view.ports != null && !view.steppingAside() && !view.quiet)
 		{
 			ports(list);

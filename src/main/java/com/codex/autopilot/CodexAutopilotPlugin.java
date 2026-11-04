@@ -14,6 +14,8 @@ import com.codex.autopilot.core.Format;
 import com.codex.autopilot.core.GoalBoard;
 import com.codex.autopilot.core.Earner;
 import com.codex.autopilot.core.Heads;
+import com.codex.autopilot.core.Kitten;
+import com.codex.autopilot.core.KittenBook;
 import com.codex.autopilot.core.Kits;
 import com.codex.autopilot.core.MoneyRuns;
 import com.codex.autopilot.core.Pace;
@@ -52,6 +54,8 @@ import javax.inject.Inject;
 import javax.swing.SwingUtilities;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
+import net.runelite.api.Item;
+import net.runelite.api.ItemContainer;
 import net.runelite.api.NPC;
 import net.runelite.api.Player;
 import net.runelite.api.Quest;
@@ -62,6 +66,7 @@ import net.runelite.api.events.ChatMessage;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.Notifier;
 import net.runelite.client.callback.ClientThread;
@@ -119,6 +124,8 @@ public class CodexAutopilotPlugin extends Plugin
 	private static final int RUMOUR_SAVE_TICKS = 500;
 	/** A task's pay is the Sailing xp that arrives within this many ticks of its slot emptying. */
 	private static final int PAID_TICKS = 2;
+	/** The kitten's clock is saved this often while it follows; what the game says is saved at once. */
+	private static final int KITTEN_SAVE_TICKS = 200;
 	/** Codex Ledger saves often and its ledger is large: it is read again at most this often. */
 	private static final long LEDGER_SECONDS = 60;
 
@@ -180,6 +187,15 @@ public class CodexAutopilotPlugin extends Plugin
 	private int paidTask;
 	private long paidFrom;
 	private int paidTicks;
+
+	/** The account's kitten, read from the game; loaded from its save on first use. */
+	private KittenBook kitten;
+	private boolean kittenDirty;
+	/**
+	 * Who follows the player: RuneLite's own follower. The replays stand in for it, as their game
+	 * has no follower of its own.
+	 */
+	private Function<Client, NPC> followerOf = Client::getFollower;
 
 	// Parsed only when the saved text changes.
 	private String boardJson;
@@ -291,6 +307,8 @@ public class CodexAutopilotPlugin extends Plugin
 		rumourDirty = false;
 		atFirstLight = false;
 		hunterLevel = 0;
+		kitten = null;
+		kittenDirty = false;
 		forgetPorts();
 		boardJson = null;
 		board = null;
@@ -335,19 +353,36 @@ public class CodexAutopilotPlugin extends Plugin
 		}
 		readLive(ticks % QUEST_TICKS == 0);
 		huntRumour(ticks % RUMOUR_SAVE_TICKS == 0);
+		tendKitten(ticks % KITTEN_SAVE_TICKS == 0);
 		evaluate();
 	}
 
 	@Subscribe
 	public void onChatMessage(ChatMessage event)
 	{
-		if (!config.rumours() || configManager.getRSProfileKey() == null)
+		if (configManager.getRSProfileKey() == null)
 		{
 			return;
 		}
 		ChatMessageType type = event.getType();
 		boolean dialog = type == ChatMessageType.DIALOG;
 		if (!dialog && type != ChatMessageType.GAMEMESSAGE && type != ChatMessageType.MESBOX)
+		{
+			return;
+		}
+		if (config.kitten())
+		{
+			KittenBook pet = kittenBook();
+			Kitten.Stage before = pet.getStage();
+			if (pet.read(event.getMessage(), System.currentTimeMillis()))
+			{
+				kittenDirty = true;
+				grown(before, pet);
+				saveKitten();
+				evaluate();
+			}
+		}
+		if (!config.rumours())
 		{
 			return;
 		}
@@ -400,6 +435,91 @@ public class CodexAutopilotPlugin extends Plugin
 		{
 			rumourDirty = false;
 			configManager.setRSProfileConfiguration(CodexAutopilotConfig.GROUP, RumourBook.KEY, rumour.toJson(gson));
+		}
+	}
+
+	/**
+	 * Looks at who follows the player: the kitten's clock runs only while it follows, and what it
+	 * grows into is read from its npc id. Saved when something changes, and now and then.
+	 */
+	private void tendKitten(boolean save)
+	{
+		if (!config.kitten() || configManager.getRSProfileKey() == null || client.getGameState() != GameState.LOGGED_IN)
+		{
+			return;
+		}
+		int id;
+		boolean carried;
+		try
+		{
+			NPC f = followerOf.apply(client);
+			id = f == null ? -1 : f.getId();
+			carried = carriesKitten();
+		}
+		catch (RuntimeException e)
+		{
+			return;
+		}
+		KittenBook pet = kittenBook();
+		Kitten.Stage before = pet.getStage();
+		if (pet.look(EVALUATE_TICKS * 600L / 1000, id, carried, System.currentTimeMillis()))
+		{
+			kittenDirty = true;
+			save = true;
+		}
+		if (pet.isOut())
+		{
+			kittenDirty = true;
+		}
+		grown(before, pet);
+		if (save)
+		{
+			saveKitten();
+		}
+	}
+
+	private boolean carriesKitten()
+	{
+		ItemContainer inv = client.getItemContainer(InventoryID.INV);
+		if (inv == null)
+		{
+			return false;
+		}
+		for (Item item : inv.getItems())
+		{
+			if (item != null && Kitten.isKittenItem(item.getId()))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** Tells the player, once, that the kitten has grown into a cat. */
+	private void grown(Kitten.Stage before, KittenBook pet)
+	{
+		if (before == Kitten.Stage.KITTEN && pet.getStage() == Kitten.Stage.CAT && config.notifications())
+		{
+			notifier.notify("Your kitten has grown into a cat: it needs no more food or attention.");
+		}
+	}
+
+	private KittenBook kittenBook()
+	{
+		if (kitten == null)
+		{
+			kitten = KittenBook.parse(gson, Profile.safe((g, k) -> configManager.getRSProfileConfiguration(g, k),
+				CodexAutopilotConfig.GROUP, KittenBook.KEY));
+		}
+		return kitten;
+	}
+
+	private void saveKitten()
+	{
+		if (kittenDirty && kitten != null && configManager.getRSProfileKey() != null)
+		{
+			kittenDirty = false;
+			configManager.setRSProfileConfiguration(CodexAutopilotConfig.GROUP, KittenBook.KEY, kitten.toJson(gson));
 		}
 	}
 
@@ -523,6 +643,12 @@ public class CodexAutopilotPlugin extends Plugin
 			activity = Activity.NONE;
 			here = null;
 			saveRumour();
+			if (kitten != null && kitten.pause())
+			{
+				// Logged out, the kitten follows no one; its clock waits for the next look at it.
+				kittenDirty = true;
+			}
+			saveKitten();
 			// The slots are read afresh on the way back in; a hand-in is not measured across it.
 			portSeen = null;
 			sailingXp = -1;
@@ -551,6 +677,9 @@ public class CodexAutopilotPlugin extends Plugin
 		saveRumour();
 		rumour = null;
 		rumourDirty = false;
+		saveKitten();
+		kitten = null;
+		kittenDirty = false;
 		hunterLevel = 0;
 		atFirstLight = false;
 		forgetPorts();
@@ -590,7 +719,7 @@ public class CodexAutopilotPlugin extends Plugin
 			watch.abandon();
 		}
 		if (CodexAutopilotConfig.GROUP.equals(group) && (Pace.KEY.equals(event.getKey()) || SharedPlan.KEY.equals(event.getKey())
-			|| RumourBook.KEY.equals(event.getKey()) || PortLog.KEY.equals(event.getKey())))
+			|| RumourBook.KEY.equals(event.getKey()) || PortLog.KEY.equals(event.getKey()) || KittenBook.KEY.equals(event.getKey())))
 		{
 			// Autopilot's own save of the pace or of the shared plan; nothing new to show.
 			return;
@@ -697,6 +826,7 @@ public class CodexAutopilotPlugin extends Plugin
 			.dailies(config.dailies())
 			.kingdom(config.kingdom())
 			.rumours(config.rumours())
+			.kitten(config.kitten())
 			.portTasks(config.portTasks())
 			.navigator(config.navigator())
 			.bankSteward(config.bankSteward())
@@ -777,7 +907,8 @@ public class CodexAutopilotPlugin extends Plugin
 		View view = new View(loggedIn, known, plan, config.stepAside() ? activity : Activity.NONE,
 			"true".equals(configManager.getConfiguration("runelite", MINIGAME_PILOT_KEY)), nextUp, s.isQuiet(), skipped,
 			sources(in, s, plan, loggedIn, now), budget, fit, fedBy,
-			s.isPortTasks() && in.ports != null ? in.ports.with(in.ports.getTasks()) : null);
+			s.isPortTasks() && in.ports != null ? in.ports.with(in.ports.getTasks()) : null,
+			s.isKitten() ? in.kitten : null);
 		SwingUtilities.invokeLater(() -> p.update(view));
 	}
 
@@ -841,6 +972,11 @@ public class CodexAutopilotPlugin extends Plugin
 			RumourBook plugin = own.isBlank() ? RumourBook.fromHunterRumours(profile) : null;
 			in.rumour = own.orElse(plugin).withDone(count(Profile.safe(profile, KILLCOUNT, RUMOUR_COUNT)));
 			in.rumourFromPlugin = plugin != null && plugin.getCreature() != null;
+		}
+		if (s.isKitten())
+		{
+			KittenBook pet = kittenBook();
+			in.kitten = pet.isBlank() ? null : pet.copy();
 		}
 		if (s.isPortTasks())
 		{
@@ -953,6 +1089,7 @@ public class CodexAutopilotPlugin extends Plugin
 			: new View.Source("Kingdom", in.kingdom.approvalPercent() + "% approval", true));
 		out.add(rumourSource(in, s));
 		out.add(portSource(in, s));
+		out.add(kittenSource(in, s));
 		out.add(!s.isNavigator() ? off("Navigator")
 			: in.board == null ? new View.Source("Navigator", "No goals", false)
 			: new View.Source("Navigator", in.board.open() == 1 ? "1 goal" : in.board.open() + " goals", true));
@@ -1011,6 +1148,36 @@ public class CodexAutopilotPlugin extends Plugin
 			return new View.Source("Port tasks", log != null && log.doesPortTasks() ? "None held" : "Not seen", false);
 		}
 		return new View.Source("Port tasks", Format.plural(log.getTasks().size(), "task", "tasks"), true);
+	}
+
+	private static View.Source kittenSource(Advisor.Inputs in, Settings s)
+	{
+		if (!s.isKitten())
+		{
+			return off("Kitten");
+		}
+		KittenBook k = in.kitten;
+		if (k == null)
+		{
+			return new View.Source("Kitten", "None seen", false);
+		}
+		if (k.getGone() != null)
+		{
+			return new View.Source("Kitten", "Ran off".equalsIgnoreCase(k.getGone()) ? "Ran off" : "Gone", false);
+		}
+		if (k.getStage() != Kitten.Stage.KITTEN)
+		{
+			return new View.Source("Kitten", k.getStage().getLabel(), true);
+		}
+		if (!k.isOut())
+		{
+			return new View.Source("Kitten", k.isHeld() ? "Carried" : "Put away", false);
+		}
+		if (k.getHungry() > 0 || k.getLonely() > 0)
+		{
+			return new View.Source("Kitten", k.getHungry() > 0 ? "Hungry" : "Lonely", true);
+		}
+		return new View.Source("Kitten", "Following", true);
 	}
 
 	private static View.Source off(String label)

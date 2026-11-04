@@ -10,6 +10,7 @@ public final class Settings
 	private boolean dailies = true;
 	private boolean kingdom = true;
 	private boolean rumours = true;
+	private boolean kitten = true;
 	private boolean portTasks = true;
 	private boolean navigator = true;
 	private boolean bankSteward = true;
@@ -54,6 +55,13 @@ public final class Settings
 	public Settings rounds(boolean v)
 	{
 		rounds = v;
+		return this;
+	}
+
+	/** The pet kitten's food and attention as a step. */
+	public Settings kitten(boolean v)
+	{
+		kitten = v;
 		return this;
 	}
 
@@ -192,6 +200,11 @@ public final class Settings
 	public boolean isRounds()
 	{
 		return rounds;
+	}
+
+	public boolean isKitten()
+	{
+		return kitten;
 	}
 
 	public boolean isRumours()

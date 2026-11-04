@@ -3,6 +3,7 @@ package com.codex.autopilot.ui;
 import com.codex.autopilot.core.Activity;
 import com.codex.autopilot.core.Budget;
 import com.codex.autopilot.core.Plan;
+import com.codex.autopilot.core.KittenBook;
 import com.codex.autopilot.core.PortLog;
 import java.util.Collections;
 import java.util.List;
@@ -46,6 +47,8 @@ public final class View
 	public final List<String> fedBy;
 	/** The account's port tasks, for their own section; null when none are held or the source is off. */
 	public final PortLog ports;
+	/** The account's kitten or cat, for its own section; null when none is known or the source is off. */
+	public final KittenBook kitten;
 
 	public View(boolean loggedIn, boolean known, Plan plan, Activity activity, boolean minigamePilot, String nextUp,
 		boolean quiet, boolean skipped, List<Source> sources)
@@ -68,6 +71,13 @@ public final class View
 	public View(boolean loggedIn, boolean known, Plan plan, Activity activity, boolean minigamePilot, String nextUp,
 		boolean quiet, boolean skipped, List<Source> sources, Budget budget, Budget.Fit fit, List<String> fedBy, PortLog ports)
 	{
+		this(loggedIn, known, plan, activity, minigamePilot, nextUp, quiet, skipped, sources, budget, fit, fedBy, ports, null);
+	}
+
+	public View(boolean loggedIn, boolean known, Plan plan, Activity activity, boolean minigamePilot, String nextUp,
+		boolean quiet, boolean skipped, List<Source> sources, Budget budget, Budget.Fit fit, List<String> fedBy, PortLog ports,
+		KittenBook kitten)
+	{
 		this.loggedIn = loggedIn;
 		this.known = known;
 		this.plan = plan == null ? Plan.EMPTY : plan;
@@ -81,6 +91,7 @@ public final class View
 		this.fit = fit == null ? Budget.Fit.NONE : fit;
 		this.fedBy = fedBy == null ? Collections.emptyList() : fedBy;
 		this.ports = ports == null || ports.getTasks().isEmpty() ? null : ports;
+		this.kitten = kitten == null || kitten.isBlank() ? null : kitten;
 	}
 
 	/** Whether a time budget is set, so the panel shows what fits rather than everything. */

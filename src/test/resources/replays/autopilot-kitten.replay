@@ -1,0 +1,90 @@
+# A pet kitten looked after through Autopilot: fed and stroked before it runs off, waiting while
+# carried, kept across a logout, and noted when it grows into a cat.
+# Facts (OSRS wiki, Kitten): hungry 24 minutes after a meal, very hungry 3 minutes later, gone 3 more;
+# one stroke lasts 18 minutes before it wants attention, then 7 and 7 more; care is needed only while
+# it is out in the world. The lines are the wiki's (Transcript:Kitten). Ids are RuneLite's gameval:
+# NpcID.KITTENPET_BROWN, NpcID.GROWNCAT_BROWN, ItemID.KITTENOBJECT_BROWN.
+# The game's follower is stood in for by "follower" (see ReplayTest). Autopilot looks every 5 ticks (3 s).
+include /replays/scenes/varrock.scene
+watch over plaque.shown.over
+watch why plaque.shown.why
+watch tier plaque.shown.tier
+watch stage kitten.stage
+watch hungry kitten.hungry
+npc KITTENPET_BROWN "Kitten" 3204 3432 as kitten
+follower KITTENPET_BROWN
+tick 5
+# A kitten first seen mid-life: nothing known of its meals yet, so nothing to nag about.
+expect title = null
+expect stage = KITTEN
+expect saved.kittenV1 ~ "KITTEN"
+
+# Fed and stroked once.
+chat GAMEMESSAGE "The kitten gobbles up the fish."
+chat GAMEMESSAGE "You softly stroke your cat."
+tick 5
+expect title = null
+# 13 minutes on (1300 ticks), one stroke's 18 minutes are 5 from up: a ready step, before the game nags.
+tick 1300
+expect key = kitten:stroke
+expect title = "Stroke your kitten"
+expect tier = READY
+expect why ~ "one stroke lasts 18 min (the wiki's time)"
+chat GAMEMESSAGE "You softly stroke your cat."
+tick 5
+chat GAMEMESSAGE "You softly stroke your cat."
+tick 5
+expect title = null
+
+# 24 minutes after the meal, the game says it is hungry: going to waste, 6 minutes to run off.
+tick 1080
+chat GAMEMESSAGE "Your kitten is hungry."
+tick 5
+expect key = kitten:feed
+expect title = "Feed your kitten"
+expect tier = WASTING
+expect why ~ "It is hungry: it runs off in about 6 min unless fed"
+
+# Picked up: its needs wait, and so does the plan.
+remove kitten
+follower none
+items INV KITTENOBJECT_BROWN 1
+tick 10
+expect title = null
+tick 500
+expect title = null
+
+# Logged out and back in.
+state LOGIN_SCREEN
+tick 2
+login
+tick 5
+# Read back from its save: the same kitten, still hungry, waiting.
+expect stage = KITTEN
+expect hungry = 1
+expect title = null
+# Put down again: hungry as it was, with the same minutes left.
+items INV clear
+npc KITTENPET_BROWN "Kitten" 3204 3432 as kitten
+follower KITTENPET_BROWN
+tick 5
+expect title = "Feed your kitten"
+expect why ~ "runs off in about 6 min"
+chat GAMEMESSAGE "The kitten laps up the milk."
+tick 5
+expect title = null
+
+# Three hours on it grows into a cat: nothing more to do for it.
+transform kitten GROWNCAT_BROWN
+follower GROWNCAT_BROWN
+chat MESBOX "Your kitten has grown into a healthy cat that can hunt for itself."
+tick 5
+expect stage = CAT
+expect title = null
+expect saved.kittenV1 ~ "CAT"
+
+# Switched off: nothing read.
+config kitten false
+chat GAMEMESSAGE "Your kitten is hungry."
+tick 5
+expect title = null
