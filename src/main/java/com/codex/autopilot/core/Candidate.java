@@ -37,7 +37,9 @@ public final class Candidate
 		/** The Hunter Guild rumour: finish it, hand in its rare part, or ask for a new one. */
 		RUMOUR("Hunter rumour"),
 		/** Sailing port tasks: the voyage that collects and delivers the cargo, a bounty, or more tasks to take. */
-		PORT_TASK("Port tasks");
+		PORT_TASK("Port tasks"),
+		/** The pet kitten: feed or stroke it before it runs off. */
+		KITTEN("Kitten");
 
 		private final String label;
 

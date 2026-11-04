@@ -1,0 +1,34 @@
+# A kitten left hungry runs off; one that was only put away does not; another's kitten nearby is not ours.
+# Facts (OSRS wiki, Kitten): very hungry 3 minutes after "hungry", gone 3 minutes after that; a new
+# kitten from Gertrude costs 100 coins. Lines from the wiki's Transcript:Kitten. Ids: RuneLite gameval
+# NpcID.KITTENPET_BLACK, NpcID.KITTENPET_LIGHT. The follower is stood in for by "follower" (ReplayTest).
+include /replays/scenes/varrock.scene
+watch tier plaque.shown.tier
+watch why plaque.shown.why
+watch gone kitten.gone
+watch out kitten.out
+npc KITTENPET_BLACK "Kitten" 3204 3432 as kitten
+# Someone else's kitten close by is never taken for the player's.
+npc KITTENPET_LIGHT "Kitten" 3202 3432 as stranger
+tick 5
+expect out = false
+expect title = null
+follower KITTENPET_BLACK
+tick 5
+expect out = true
+
+# Hungry, then very hungry: going to waste, the last minutes counting down.
+chat GAMEMESSAGE "Your kitten is hungry."
+tick 300
+chat GAMEMESSAGE "Your kitten is very hungry."
+tick 5
+expect title = "Feed your kitten"
+expect tier = WASTING
+expect why ~ "It is very hungry: it runs off in about 3 min unless fed"
+# Its time runs out and it is gone from beside the player, not into the pack: it ran off.
+tick 300
+remove kitten
+follower none
+tick 15
+expect gone = "ran off"
+expect title = null

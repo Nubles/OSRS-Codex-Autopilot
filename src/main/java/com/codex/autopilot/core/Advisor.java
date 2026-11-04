@@ -69,6 +69,8 @@ public final class Advisor
 		public RumourBook rumour;
 		/** True when the rumour is the Hunter Rumours plugin's, not read by Autopilot itself. */
 		public boolean rumourFromPlugin;
+		/** The account's kitten as Autopilot last saw it; null when the source is off. */
+		public KittenBook kitten;
 		/** The account's port tasks, read live or as last saved; null when none are known. */
 		public PortLog ports;
 		/** Ironmen cannot buy their upgrades, so no coins step is offered. */
@@ -153,6 +155,17 @@ public final class Advisor
 			catch (RuntimeException e)
 			{
 				// Leave the rumour out this time round.
+			}
+		}
+		if (s.isKitten() && in.kitten != null)
+		{
+			try
+			{
+				out.addAll(Kittens.candidates(in.kitten, now));
+			}
+			catch (RuntimeException e)
+			{
+				// Leave the kitten out this time round.
 			}
 		}
 		if (s.isPortTasks() && in.ports != null)

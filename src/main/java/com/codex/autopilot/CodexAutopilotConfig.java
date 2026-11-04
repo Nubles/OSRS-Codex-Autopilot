@@ -167,11 +167,24 @@ public interface CodexAutopilotConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "kitten",
+		name = "Pet kitten",
+		description = "Feed or stroke your kitten before it runs off, while it follows you. Its times are learned from the game's own"
+			+ " warnings and kept per account across logouts; the panel shows its hunger, attention and growth to a cat",
+		section = SOURCES,
+		position = 7
+	)
+	default boolean kitten()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 		keyName = "navigator",
 		name = "Codex Navigator goals",
 		description = "Add the next step toward the goals you pinned in Codex Navigator",
 		section = SOURCES,
-		position = 7
+		position = 8
 	)
 	default boolean navigator()
 	{
@@ -183,7 +196,7 @@ public interface CodexAutopilotConfig extends Config
 		name = "Codex Bank Steward bank",
 		description = "Check what a chore needs against the bank Codex Bank Steward last saw",
 		section = SOURCES,
-		position = 8
+		position = 9
 	)
 	default boolean bankSteward()
 	{

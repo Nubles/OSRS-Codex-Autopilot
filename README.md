@@ -74,6 +74,24 @@ Everything about a task (its name, ports, cargo and amount, or the bounty's crea
   <img src="docs/screenshots/plaque-port-tasks.png" alt="The plaque for the next stop of the voyage">
 </p>
 
+## Your kitten, before it runs off
+
+Inspired by the Kitten Tracker plugin, which some 165,000 players have installed to keep their kitten fed, stroked and growing. Autopilot puts the kitten into the account's one order, so a meal that is due is the next step, ahead of a bird house run, rather than a timer in a corner.
+
+- **Fed and stroked in time.** "Feed your kitten" turns up five minutes before it should get hungry, as a ready step that fits into the trip already being made, and goes to waste once the game says it is hungry, with the minutes left before it runs off ("It is hungry: it runs off in about 6 min unless fed"). The same for attention, with the tip that stroking twice buys 25 minutes and a ball of wool 51. Both at once are one step.
+- **Times learned from the game.** Every hunger or attention warning is the measure of how long the last meal or stroke really lasted. Until three are heard the wiki's times are used (24 minutes to hunger; 25 for a new kitten, 18 for one stroke, 25 for more, 51 for wool), and the step says whose time it is.
+- **Only while it follows.** The clock runs only while your kitten follows you, as the game's own does: picked up, banked or logged out, its needs wait and nothing nags. Another player's kitten nearby is never taken for yours; the follower is RuneLite's own.
+- **Kept per account.** Saved with this account's settings (`codexautopilot/kittenV1`), so a logout, a world hop or switching accounts loses nothing.
+- **Growth.** The panel's Kitten section shows food, attention and growth as bars; "Guess age" in game sets the growth clock right. When it grows into a cat Autopilot tells you once and stops asking, and shows when it will turn overgrown (another five to six hours of following).
+
+What it reads is the game's own: the follower's npc id (kitten, cat or overgrown cat), the kitten in your inventory, and the lines the wiki records ("The kitten gobbles up the fish.", "Your kitten is hungry.", "You softly stroke your cat.", "Your kitten has grown into a healthy cat that can hunt for itself." and the rest). **Pet kitten** under Sources switches it off.
+
+<p align="center">
+  <img src="docs/screenshots/kitten-panel.png" width="225" alt="A hungry kitten as the next step, with its food, attention and growth">
+  <br>
+  <img src="docs/screenshots/plaque-kitten.png" alt="The plaque asking to feed and stroke the kitten">
+</p>
+
 ## What it does
 
 - **One step, always.** The plaque shows the best next step in gilt letters, what kind of step it is, about how long it takes, why it is first, and what to bring. Its edge takes the step's colour: ember when something is about to be lost, green for a ready chore, teal for your focused goal.
@@ -127,7 +145,7 @@ Every source is optional. Bird houses and the special patches, herb runs and hop
 
 ## Rules posture
 
-Codex Autopilot only reads what the game and RuneLite already know and draws a plaque and a panel. It does not click, type, change menus or menu entries, give boss or combat cues, read or write files (apart from the optional field notes below), or send anything over the network. Its notifications go through RuneLite's own notifier, on your computer. The only thing it saves is its own settings, including your learned pace (a few numbers per kind of run, kept with the rest of the plugin's settings for that account), your Hunter rumour as it last read it (`codexautopilot/rumourV1`; it reads game messages and the guild hunters' lines only, never other players' chat) and its top steps for the other Codex apps (`codexautopilot/planV1`, switch off with **Share the plan**). It never writes another plugin's data.
+Codex Autopilot only reads what the game and RuneLite already know and draws a plaque and a panel. It does not click, type, change menus or menu entries, give boss or combat cues, read or write files (apart from the optional field notes below), or send anything over the network. Its notifications go through RuneLite's own notifier, on your computer. The only thing it saves is its own settings, including your learned pace (a few numbers per kind of run, kept with the rest of the plugin's settings for that account), your Hunter rumour as it last read it (`codexautopilot/rumourV1`; it reads game messages and the guild hunters' lines only, never other players' chat), your kitten as it last saw it (`codexautopilot/kittenV1`) and its top steps for the other Codex apps (`codexautopilot/planV1`, switch off with **Share the plan**). It never writes another plugin's data.
 
 ## Field notes
 
