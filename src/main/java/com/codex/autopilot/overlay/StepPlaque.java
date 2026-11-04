@@ -6,6 +6,7 @@ import com.codex.autopilot.ui.Glyph;
 import com.codex.autopilot.ui.Sigil;
 import com.codex.autopilot.ui.StepCard;
 import com.codex.autopilot.ui.Theme;
+import com.codex.autopilot.ui.TravelLine;
 import com.codex.autopilot.ui.Ui;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -77,8 +78,9 @@ public class StepPlaque extends Overlay
 		String[] titleLines = wrap(c.getTitle(), bold, room, 2);
 		String[] why = wrap(c.getWhy(), small, room, 3);
 		String[] bring = wrap(c.getBring(), small, room, 2);
+		String travel = c.getTrip() == null ? null : Ui.clip(c.getTrip().text(), small, room - 14);
 		int height = PAD + small.getHeight() + titleLines.length * bold.getHeight() + why.length * small.getHeight()
-			+ bring.length * small.getHeight() + 8;
+			+ (travel == null ? 0 : small.getHeight()) + bring.length * small.getHeight() + 8;
 
 		Shape shape = new RoundRectangle2D.Float(0.5f, 0.5f, width - 1, height - 1, 10, 10);
 		g.setPaint(new GradientPaint(0, 0, Theme.alpha(Theme.CARD_TOP, 238), 0, height, Theme.alpha(Theme.INK_DEEP, 238)));
@@ -114,6 +116,13 @@ public class StepPlaque extends Overlay
 		{
 			y += small.getHeight();
 			Ui.shadowed(g, line, textX, y, Theme.TEXT);
+		}
+		if (travel != null)
+		{
+			y += small.getHeight();
+			Color t = c.getTrip().isBanked() ? Theme.TEXT_MUTED : Theme.TEAL;
+			TravelLine.paintMark(g, textX, y - small.getAscent() + 1, t);
+			Ui.shadowed(g, travel, textX + 14, y, t);
 		}
 		for (String line : bring)
 		{

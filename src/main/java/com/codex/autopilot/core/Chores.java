@@ -382,7 +382,7 @@ public final class Chores
 
 		String bring = kind == Candidate.Kind.BIRDHOUSE_RUN ? Bring.line(fossilNeeds(list), bank) : null;
 		return new Candidate("chores:" + kind.name().toLowerCase(), kind, tier, over, title, why, bring,
-			minutes, urgency, deadline, list.size(), item);
+			minutes, urgency, deadline, list.size(), item).at(Where.tiles(list));
 	}
 
 	private static int produceItem(List<Reading> list, int fallback)

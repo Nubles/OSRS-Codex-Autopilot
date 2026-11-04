@@ -38,6 +38,10 @@ public final class StepCard
 		StackPanel body = new StackPanel(3, 0);
 		body.add(Ui.wrapped(c.getTitle(), Theme.title(), dim ? Theme.TEXT : Theme.GOLD_BRIGHT, width));
 		body.add(Ui.wrapped(c.getWhy(), Theme.small(), Theme.TEXT, width));
+		if (c.getTrip() != null)
+		{
+			body.add(new TravelLine(c.getTrip()));
+		}
 		if (c.getBring() != null)
 		{
 			body.add(Ui.wrapped(c.getBring(), Theme.small(), Bring.isShort(c.getBring()) ? Theme.EMBER : Theme.TEAL, width));
@@ -60,6 +64,10 @@ public final class StepCard
 		StackPanel body = new StackPanel(2, 0);
 		body.add(Ui.wrapped(c.getTitle(), Theme.body(), Theme.TEXT, width));
 		body.add(Ui.wrapped(c.getWhy(), Theme.small(), Theme.TEXT_MUTED, width));
+		if (c.getTrip() != null)
+		{
+			body.add(new TravelLine(c.getTrip()));
+		}
 		if (c.getBring() != null)
 		{
 			body.add(Ui.wrapped(c.getBring(), Theme.small(), Bring.isShort(c.getBring()) ? Theme.EMBER : Theme.alpha(Theme.TEAL, 220), width));
@@ -85,10 +93,10 @@ public final class StepCard
 		return bar;
 	}
 
-	/** "~11 min", or "1 hr" for the long ones. */
+	/** "~11 min", or "1 hr" for the long ones; the journey there is included. */
 	public static String minutes(Candidate c)
 	{
-		int m = c.getMinutes();
+		int m = c.getTotalMinutes();
 		return m >= 60 ? "~1 hr" : "~" + m + " min";
 	}
 

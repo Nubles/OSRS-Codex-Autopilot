@@ -1,5 +1,7 @@
 package com.codex.autopilot.core;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -23,7 +25,15 @@ public final class Candidate
 		CONTRACT("Farming contract"),
 		KINGDOM("Kingdom of Miscellania"),
 		FOCUS_GOAL("Focused goal"),
-		GOAL("Goal");
+		GOAL("Goal"),
+		/** Coins toward a Codex Gear Roadmap saving goal, at a Money Pilot or Boss Pilot rate. */
+		EARN("Earn"),
+		/** A trip to the boss pinned in Codex Boss Pilot. */
+		BOSS("Boss trip"),
+		/** The kit chosen in Codex Quartermaster has run out. */
+		RESTOCK("Restock"),
+		/** A collection log slot marked wanted in Codex Log Insight. */
+		LOG("Collection log");
 
 		private final String label;
 
@@ -57,15 +67,19 @@ public final class Candidate
 	private final int count;
 	private final int itemId;
 	private final boolean paced;
+	/** Where the step is done; the cheapest to reach is where it starts. */
+	private final List<Tile> targets;
+	/** How the player gets there from what Codex Wayfinder shares, or null when not costed. */
+	private final Trip trip;
 
 	public Candidate(String key, Kind kind, Tier tier, String over, String title, String why, String bring,
 		int minutes, double urgency, long deadline, int count, int itemId)
 	{
-		this(key, kind, tier, over, title, why, bring, minutes, urgency, deadline, count, itemId, false);
+		this(key, kind, tier, over, title, why, bring, minutes, urgency, deadline, count, itemId, false, Collections.emptyList(), null);
 	}
 
 	private Candidate(String key, Kind kind, Tier tier, String over, String title, String why, String bring,
-		int minutes, double urgency, long deadline, int count, int itemId, boolean paced)
+		int minutes, double urgency, long deadline, int count, int itemId, boolean paced, List<Tile> targets, Trip trip)
 	{
 		this.key = key;
 		this.kind = kind;
@@ -80,19 +94,40 @@ public final class Candidate
 		this.count = count;
 		this.itemId = itemId;
 		this.paced = paced;
+		this.targets = targets == null ? Collections.emptyList() : targets;
+		this.trip = trip;
 	}
 
 	/** The same step taking the player's own learned time instead of the estimate. */
 	public Candidate withPace(int minutes)
 	{
-		return new Candidate(key, kind, tier, over, title, why, bring, minutes, urgency, deadline, count, itemId, true);
+		return new Candidate(key, kind, tier, over, title, why, bring, minutes, urgency, deadline, count, itemId, true, targets, trip);
+	}
+
+	/** The same step, done at these places. */
+	public Candidate at(List<Tile> places)
+	{
+		List<Tile> list = places == null ? Collections.emptyList() : Collections.unmodifiableList(new java.util.ArrayList<>(places));
+		return new Candidate(key, kind, tier, over, title, why, bring, minutes, urgency, deadline, count, itemId, paced, list, trip);
+	}
+
+	/** The same step with the journey to its start costed in. */
+	public Candidate withTrip(Trip t)
+	{
+		return new Candidate(key, kind, tier, over, title, why, bring, minutes, urgency, deadline, count, itemId, paced, targets, t);
+	}
+
+	/** The same step with another bring line. */
+	public Candidate withBring(String line)
+	{
+		return new Candidate(key, kind, tier, over, title, why, line, minutes, urgency, deadline, count, itemId, paced, targets, trip);
 	}
 
 	/** The same step with a note added to its why line. */
 	public Candidate withNote(String note)
 	{
 		String w = why == null || why.isEmpty() ? note : why + "; " + note;
-		return new Candidate(key, kind, tier, over, title, w, bring, minutes, urgency, deadline, count, itemId, paced);
+		return new Candidate(key, kind, tier, over, title, w, bring, minutes, urgency, deadline, count, itemId, paced, targets, trip);
 	}
 
 	/** Stable for the session, so Skip and Snooze stick to the same chore or goal. */
@@ -141,6 +176,36 @@ public final class Candidate
 		return minutes;
 	}
 
+	/** Whole minutes the journey to the start adds, or 0 when it is not costed. */
+	public int getTravelMinutes()
+	{
+		return trip == null ? 0 : (trip.getSeconds() + 59) / 60;
+	}
+
+	/** The step's own minutes and the journey to it: what the ranking and the time budget count. */
+	public int getTotalMinutes()
+	{
+		return minutes + getTravelMinutes();
+	}
+
+	/** The step's own time and the journey to it, to the second: what ranks two steps otherwise level. */
+	public int getTotalSeconds()
+	{
+		return minutes * 60 + (trip == null ? 0 : trip.getSeconds());
+	}
+
+	/** Where the step is done, or empty when it has no place (a goal, say). */
+	public List<Tile> getTargets()
+	{
+		return targets;
+	}
+
+	/** How to get there, such as "via Ardougne cloak, ~40s", or null. */
+	public Trip getTrip()
+	{
+		return trip;
+	}
+
 	/** True when the minutes are the player's own pace, learned from their runs, rather than an estimate. */
 	public boolean isPaced()
 	{
@@ -176,10 +241,10 @@ public final class Candidate
 		return over == null || over.isEmpty() ? title : over + ": " + title;
 	}
 
-	/** Urgency per minute spent, so quick, valuable chores come first. */
+	/** Urgency per minute spent, journey included, so quick, valuable chores close at hand come first. */
 	public double density()
 	{
-		return urgency / minutes;
+		return urgency * 60 / getTotalSeconds();
 	}
 
 	@Override
@@ -191,7 +256,8 @@ public final class Candidate
 		}
 		Candidate c = (Candidate) o;
 		return key.equals(c.key) && tier == c.tier && minutes == c.minutes && paced == c.paced && deadline == c.deadline && count == c.count
-			&& Objects.equals(title, c.title) && Objects.equals(why, c.why) && Objects.equals(bring, c.bring);
+			&& Objects.equals(title, c.title) && Objects.equals(why, c.why) && Objects.equals(bring, c.bring)
+			&& Objects.equals(trip, c.trip);
 	}
 
 	@Override
@@ -203,6 +269,6 @@ public final class Candidate
 	@Override
 	public String toString()
 	{
-		return tier + " " + headline() + " (" + minutes + " min)";
+		return tier + " " + headline() + " (" + getTotalMinutes() + " min" + (trip == null ? "" : ", " + trip.text()) + ")";
 	}
 }

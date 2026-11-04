@@ -101,6 +101,7 @@ public final class KingdomWatch
 		double urgency = (lowApproval ? (s.getApprovalTarget() - k.approvalPercent()) / 100.0 : 0) + (lowCoffer ? topUp / (double) full : 0);
 		// The value is lost at the reset, so it only counts as going to waste when the reset is near.
 		return new Candidate("kingdom", Candidate.Kind.KINGDOM, soon ? Tier.WASTING : Tier.READY, "Miscellania", title, why,
-			lowCoffer ? Bring.line(java.util.Collections.singletonList(new Need("coins", topUp, ItemID.COINS)), bank) : null, 6, 0.1 + urgency * 0.5, soon ? reset : 0, 1, ItemID.POH_TREASURE_TEAK);
+			lowCoffer ? Bring.line(java.util.Collections.singletonList(new Need("coins", topUp, ItemID.COINS)), bank) : null, 6, 0.1 + urgency * 0.5, soon ? reset : 0, 1, ItemID.POH_TREASURE_TEAK)
+			.at(java.util.Collections.singletonList(Where.KINGDOM));
 	}
 }

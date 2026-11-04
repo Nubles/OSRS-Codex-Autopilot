@@ -123,6 +123,10 @@ public class AutopilotPanel extends PluginPanel
 		{
 			list.add(budgetBar());
 		}
+		if (!view.fedBy.isEmpty())
+		{
+			list.add(new FedBy(view.fedBy, WIDTH - 6));
+		}
 		if (view.steppingAside())
 		{
 			list.add(new SectionHeader("Stepping aside"));

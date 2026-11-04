@@ -1,10 +1,11 @@
 # Codex Autopilot
 
-**One next step for your whole account.** A single plaque in the game view, and a side panel, that always shows the one best thing to do right now, ranked across everything your account has going on, with a one-line reason. Full bird houses, herb runs, grown trees and special patches, diary dailies before the reset, the Kingdom of Miscellania and the goal you pinned in Codex Navigator all go into one order: what is about to go to waste first, then the chores that are ready, then your goal.
+**One next step for your whole account, fed by the whole Codex suite.** A single plaque in the game view, and a side panel, that always shows the one best thing to do right now, ranked across everything your account has going on, with a one-line reason. Full bird houses, herb runs, grown trees and special patches, diary dailies before the reset, the Kingdom of Miscellania and the goal you pinned in Codex Navigator all go into one order: what is about to go to waste first, then the chores that are ready, then your goal.
 
 It is part of the **Codex** suite, after [Codex Navigator](https://github.com/Nubles/OSRS-Codex-Navigator), [Codex Rounds](https://github.com/Nubles/OSRS-Codex-Rounds), [Codex Bank Steward](https://github.com/Nubles/OSRS-Codex-Bank-Steward), [Codex Minigame Pilot](https://github.com/Nubles/OSRS-Codex-Minigame-Pilot) and the rest, and shares their look: warm ink, aged gold and the game's own fonts.
 
 <p align="center">
+  <img src="docs/screenshots/suite-panel.png" width="225" alt="A plan fed by eight Codex apps, with the way to each step">
   <img src="docs/screenshots/panel.png" width="225" alt="The next step and the five after it">
   <img src="docs/screenshots/going-to-waste.png" width="225" alt="Two hours before the reset">
   <img src="docs/screenshots/stepping-aside.png" width="225" alt="Stepping aside in the Motherlode Mine">
@@ -12,6 +13,28 @@ It is part of the **Codex** suite, after [Codex Navigator](https://github.com/Nu
 <p align="center">
   <img src="docs/screenshots/herb-run.png" width="225" alt="A herb run with a diseased patch">
   <img src="docs/screenshots/budget.png" width="225" alt="What fits in 30 minutes">
+</p>
+
+## The whole suite in one next step
+
+Every Codex app you run shares a little of what it knows on your account, and Autopilot plans with all of it. No other plugin puts your travel, your money makers, your saving goal, your kits, your bosses and your collection log into one ordered list.
+
+- **The way there, priced.** With Codex Wayfinder on, every step that happens somewhere (patches, bird houses, dailies, the kingdom, the farming contract) is priced with the teleports this account actually has, at Wayfinder's cast times and your own walking pace, plus the walk from where it lands, or the walk from where you stand. The step says how: "via Ardougne cloak, ~10s", "walk, ~45s", or "via Varrock Teleport (from the bank), ~2 min" when the teleport is banked. The step's time includes the journey.
+- **Ties go to the closer step.** The order rule is unchanged: going to waste, then ready chores, then your focused goal, then other goals. Inside a band, steps are compared by what they save per minute *including the journey*, and what is still level goes to the step that is quicker to reach and do. The time budget counts the journey too.
+- **Earn it for your goal.** When the upgrade Codex Gear Roadmap is saving toward costs more than the coins you hold (counted by Codex Ledger across every place it has seen, or Codex Bank Steward's bank), Autopilot offers "Earn 3.4M: Killing Vorkath": an hour's sitting of your best money maker, at the rate Codex Money Pilot clocked for you or the loot an hour of your Codex Boss Pilot trips, with how many hours are left. Ironmen are not offered it. Pieces you already hold are not counted; prices are today's.
+- **Your pinned boss.** The boss pinned in Codex Boss Pilot is a step ("Zulrah trip"), timed at your average trip, with your loot an hour and kill count (the collection log's count from Codex Log Insight when it is newer), and the Codex Quartermaster kit for it: "Take your Zulrah kit: 4 trips in the bank", or "You're out of sharks for your Zulrah kit".
+- **Restock.** When the kit you chose in Quartermaster has no trips left in the bank, a step says so and names the supply that ran out first.
+- **Wanted slots.** The first collection log slot you marked wanted in Log Insight is a step: "Chase Jar of swamp".
+- **Dailies while logged out.** The dailies Codex Rounds saw today fill in while the game cannot be read.
+- **Fed by.** A small row of gilt pills at the top of the panel names every app whose data is in the plan right now.
+- **Shared with Codex Home.** The top steps are saved for the other apps, so Codex Home's Today tab can show them.
+
+Every app is optional and read only: a missing, switched-off or damaged save simply adds nothing, and each has its own switch under **Codex suite** in the settings.
+
+<p align="center">
+  <img src="docs/screenshots/plaque-travel.png" alt="The plaque with the way there">
+  <br>
+  <img src="docs/screenshots/plaque-boss.png" alt="The plaque for the pinned boss and its kit">
 </p>
 
 ## What it does
@@ -50,12 +73,22 @@ Everything is read on your computer, from the client and from RuneLite's saved p
 - **The game**: diary dailies and the farming contract, read live while you are logged in.
 - **Codex Navigator**: the goal board it saves for companion plugins.
 - **Codex Bank Steward**: the bank it last saw, only to check a chore's supplies.
+- **Codex Wayfinder**: the travel atlas it shares (`codexwayfinder/atlasV1`): your teleports, where each lands and how long it takes, and your walking pace.
+- **Codex Money Pilot**: the money making runs it clocked (`codexmoneypilot/runs`), at your own rate over the last 60 days.
+- **Codex Gear Roadmap**: the upgrade you are saving toward (`codexgearroadmap/goal`).
+- **Codex Ledger**: your coins, what you hold and its prices (`codexledger/ledger`), read about once a minute.
+- **Codex Quartermaster**: your kits and the trips your bank covers (`codexquartermaster/kitsV1`).
+- **Codex Boss Pilot**: the boss you pinned and your logged trips (`codexbosspilot/pinned`, `logbookV1`).
+- **Codex Rounds**: the dailies it saw today (`codexrounds/memory`), only while you are logged out.
+- **Codex Log Insight**: the slots you marked wanted and the log's kill counts (`codexloginsight/progress`).
+
+Several of these are the other app's own save rather than a published contract; Autopilot's tests pin the exact shape it reads, so a change on either side is caught.
 
 Every source is optional. Bird houses and the special patches, herb runs and hops runs each have their own switch. Without Navigator there are no goal steps; without Bank Steward the bring line is a plain list. Each can be switched off in the settings.
 
 ## Rules posture
 
-Codex Autopilot only reads what the game and RuneLite already know and draws a plaque and a panel. It does not click, type, change menus or menu entries, give boss or combat cues, read or write files, or send anything over the network. Its notifications go through RuneLite's own notifier, on your computer. The only thing it saves is its own settings, including your learned pace (a few numbers per kind of run, kept with the rest of the plugin's settings for that account). It never writes another plugin's data.
+Codex Autopilot only reads what the game and RuneLite already know and draws a plaque and a panel. It does not click, type, change menus or menu entries, give boss or combat cues, read or write files, or send anything over the network. Its notifications go through RuneLite's own notifier, on your computer. The only thing it saves is its own settings, including your learned pace (a few numbers per kind of run, kept with the rest of the plugin's settings for that account) and its top steps for the other Codex apps (`codexautopilot/planV1`, switch off with **Share the plan**). It never writes another plugin's data.
 
 ## Development
 

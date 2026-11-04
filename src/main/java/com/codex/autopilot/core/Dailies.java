@@ -33,6 +33,20 @@ public final class Dailies
 		return out;
 	}
 
+	private static List<Tile> places(List<DailyState> open)
+	{
+		List<Tile> out = new ArrayList<>();
+		for (DailyState d : open)
+		{
+			Tile t = Where.of(d.getDaily());
+			if (t != null && !out.contains(t))
+			{
+				out.add(t);
+			}
+		}
+		return out;
+	}
+
 	public static List<Candidate> candidates(List<DailyState> states, Settings s, BankSnapshot bank, long now)
 	{
 		List<Candidate> out = new ArrayList<>();
@@ -76,12 +90,13 @@ public final class Dailies
 				+ (open.size() > 1 ? ": " + String.join(", ", names) : "");
 			out.add(new Candidate("dailies", Candidate.Kind.DAILIES, soon ? Tier.WASTING : Tier.READY, "Diary dailies", title, why,
 				Bring.line(needs, bank), open.size() * 3, (soon ? 1.0 : 0.15) * open.size(), soon ? reset : 0, open.size(),
-				open.size() == 1 ? open.get(0).getDaily().getItemId() : ItemID.BATTLESTAFF));
+				open.size() == 1 ? open.get(0).getDaily().getItemId() : ItemID.BATTLESTAFF).at(places(open)));
 		}
 		if (contract != null)
 		{
 			out.add(new Candidate("contract", Candidate.Kind.CONTRACT, Tier.READY, "Farming Guild", "See Guildmaster Jane",
-				contract.getReward(), null, 3, contract.getReward().startsWith("Done") ? 0.3 : 0.05, 0, 1, Daily.CONTRACT.getItemId()));
+				contract.getReward(), null, 3, contract.getReward().startsWith("Done") ? 0.3 : 0.05, 0, 1, Daily.CONTRACT.getItemId())
+				.at(java.util.Collections.singletonList(Where.FARMING_GUILD)));
 		}
 		return out;
 	}

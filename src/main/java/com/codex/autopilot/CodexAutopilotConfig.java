@@ -25,6 +25,9 @@ public interface CodexAutopilotConfig extends Config
 	@ConfigSection(name = "Notifications", description = "Heads-up notifications through RuneLite's notifier", position = 3)
 	String NOTIFICATIONS = "notifications";
 
+	@ConfigSection(name = "Codex suite", description = "What the other Codex apps share that Autopilot plans with", position = 4)
+	String SUITE = "suite";
+
 	/** The time budget the panel's selector sets. */
 	String BUDGET_KEY = "timeBudget";
 
@@ -259,6 +262,114 @@ public interface CodexAutopilotConfig extends Config
 		position = 2
 	)
 	default boolean notifyReady()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "wayfinder",
+		name = "Codex Wayfinder travel",
+		description = "Price the journey to each step with the teleports Codex Wayfinder says this account has, and show the way: \"via Ardougne cloak, ~40s\"",
+		section = SUITE,
+		position = 0
+	)
+	default boolean wayfinder()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "moneyPilot",
+		name = "Codex Money Pilot rates",
+		description = "Use the money makers Codex Money Pilot has clocked for you, at your own rate",
+		section = SUITE,
+		position = 1
+	)
+	default boolean moneyPilot()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "gearRoadmap",
+		name = "Codex Gear Roadmap goal",
+		description = "When the upgrade Codex Gear Roadmap is saving toward is short of coins, offer a step to earn them",
+		section = SUITE,
+		position = 2
+	)
+	default boolean gearRoadmap()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "ledger",
+		name = "Codex Ledger coins",
+		description = "Count your coins and what you hold across every place Codex Ledger has seen",
+		section = SUITE,
+		position = 3
+	)
+	default boolean ledger()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "quartermaster",
+		name = "Codex Quartermaster kits",
+		description = "Check the kit chosen in Codex Quartermaster, and say when it needs restocking",
+		section = SUITE,
+		position = 4
+	)
+	default boolean quartermaster()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "bossPilot",
+		name = "Codex Boss Pilot",
+		description = "A step for the boss pinned in Codex Boss Pilot, and your loot an hour there as a money maker",
+		section = SUITE,
+		position = 5
+	)
+	default boolean bossPilot()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "roundsDailies",
+		name = "Codex Rounds dailies",
+		description = "While logged out, show the dailies as Codex Rounds last saw them today",
+		section = SUITE,
+		position = 6
+	)
+	default boolean roundsDailies()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "logInsight",
+		name = "Codex Log Insight wanted slots",
+		description = "A step for the first collection log slot you marked wanted in Codex Log Insight",
+		section = SUITE,
+		position = 7
+	)
+	default boolean logInsight()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "sharePlan",
+		name = "Share the plan",
+		description = "Save the top steps for the other Codex apps, so Codex Home can show them on its Today tab",
+		section = SUITE,
+		position = 8
+	)
+	default boolean sharePlan()
 	{
 		return true;
 	}
