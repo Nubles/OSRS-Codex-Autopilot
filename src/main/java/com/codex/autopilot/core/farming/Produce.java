@@ -55,17 +55,17 @@ public enum Produce
 	LIMPWURT("Limpwurt", PatchKind.FLOWER, ItemID.LIMPWURT_ROOT, 5, 5, 0, 1, ItemID.LIMPWURT_SEED, 26),
 	WHITE_LILY("White lily", PatchKind.FLOWER, ItemID.WHITELILLY, 5, 5, 0, 1, ItemID.WHITE_LILY_SEED, 58),
 
-	// Hops (levels are not used by Autopilot; Varlamore's three are left at 1)
+	// Hops: levels from the OSRS Wiki hops patch table (Flax 18, Hemp 37, Cotton 71); Autopilot does not gate on them yet
 	BARLEY("Barley", PatchKind.HOPS, ItemID.BARLEY, 10, 5, 0, 3, ItemID.BARLEY_SEED, 3),
 	HAMMERSTONE("Hammerstone", PatchKind.HOPS, ItemID.HAMMERSTONE_HOPS, 10, 5, 0, 3, ItemID.HAMMERSTONE_HOP_SEED, 4),
 	ASGARNIAN("Asgarnian", PatchKind.HOPS, ItemID.ASGARNIAN_HOPS, 10, 6, 0, 3, ItemID.ASGARNIAN_HOP_SEED, 8),
 	JUTE("Jute", PatchKind.HOPS, ItemID.JUTE_FIBRE, 10, 6, 0, 3, ItemID.JUTE_SEED, 13),
 	YANILLIAN("Yanillian", PatchKind.HOPS, ItemID.YANILLIAN_HOPS, 10, 7, 0, 3, ItemID.YANILLIAN_HOP_SEED, 16),
-	FLAX("Flax", PatchKind.HOPS, ItemID.FLAX, 20, 4, 0, 3, ItemID.FLAX_SEED, 1),
+	FLAX("Flax", PatchKind.HOPS, ItemID.FLAX, 20, 4, 0, 3, ItemID.FLAX_SEED, 18),
 	KRANDORIAN("Krandorian", PatchKind.HOPS, ItemID.KRANDORIAN_HOPS, 10, 8, 0, 3, ItemID.KRANDORIAN_HOP_SEED, 21),
 	WILDBLOOD("Wildblood", PatchKind.HOPS, ItemID.WILDBLOOD_HOPS, 10, 9, 0, 3, ItemID.WILDBLOOD_HOP_SEED, 28),
-	HEMP("Hemp", PatchKind.HOPS, ItemID.HEMP, 20, 5, 0, 3, ItemID.HEMP_SEED, 1),
-	COTTON("Cotton", PatchKind.HOPS, ItemID.COTTON_BOLL, 20, 6, 0, 3, ItemID.COTTON_SEED, 1),
+	HEMP("Hemp", PatchKind.HOPS, ItemID.HEMP, 20, 5, 0, 3, ItemID.HEMP_SEED, 37),
+	COTTON("Cotton", PatchKind.HOPS, ItemID.COTTON_BOLL, 20, 6, 0, 3, ItemID.COTTON_SEED, 71),
 
 	// Herbs
 	GUAM("Guam", PatchKind.HERB, ItemID.GUAM_LEAF, 20, 5, 0, 3, ItemID.GUAM_SEED, 9),
