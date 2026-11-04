@@ -1,0 +1,7 @@
+# Varrock, by Zaff's shop (region 12854). The scene is only somewhere to stand: Autopilot reads
+# no objects, only varbits, the player's region and the NPCs close by.
+scene 3200 3400
+at 3203 3432
+login
+watch key plaque.shown.key
+watch title plaque.shown.title

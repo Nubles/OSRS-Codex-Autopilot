@@ -1,0 +1,31 @@
+# Autopilot steps aside where Codex Minigame Pilot guides: in the Motherlode Mine's regions, at the
+# Blast Furnace (region 7757) and with a Mahogany Homes contractor close by (Amy, Marlo, Ellie or
+# Angelo; source: OSRS wiki, "Mahogany Homes"). The plaque comes back on leaving, and stays put
+# with "Step aside in minigames" off.
+include /replays/scenes/varrock.scene
+varbit VARROCK_DIARY_EASY_COMPLETE 1
+varbit ZAFF_LAST_CLAIMED 0
+tick 6
+expect title = "Zaff's battlestaves"
+
+# Into the Motherlode Mine (region 14936, by its bank chest).
+scene 3712 5632
+at 3760 5666
+tick 5
+expect title = null
+
+# Out again, to Varrock.
+scene 3200 3400
+at 3203 3432
+tick 5
+expect title = "Zaff's battlestaves"
+
+# On a Mahogany Homes contract: Marlo, the Varrock contractor, stands close by.
+npc CON_CONTRACTOR_VARROCK_2OP "Marlo" 3205 3433
+tick 5
+expect title = null
+
+# Told not to step aside, it stays.
+config stepAside false
+tick 5
+expect title = "Zaff's battlestaves"
