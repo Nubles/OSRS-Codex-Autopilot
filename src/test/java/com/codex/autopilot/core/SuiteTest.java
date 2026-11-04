@@ -614,4 +614,29 @@ public class SuiteTest
 		assertTrue(saver.due(SharedPlan.of(Arrays.asList(b, a2), null, NOW_MS + SharedPlan.REFRESH_MS + 600),
 			GSON, NOW_MS + SharedPlan.REFRESH_MS + 600));
 	}
+
+	/**
+	 * The plan exactly as Codex Home's tests read it: the same file sits in osrs-codex-home's test resources
+	 * (com/codex/home/core/autopilot-planV1.json). If this changes, the contract has changed: keep the two in step.
+	 */
+	@Test
+	public void sharedPlanMatchesTheFileCodexHomeReads() throws Exception
+	{
+		List<Candidate> sample = Arrays.asList(
+			new Candidate("chores:herb_run", Candidate.Kind.HERB_RUN, Tier.WASTING, "Herb run", "4 ready, 1 diseased",
+				"Herb at Catherby is diseased: cure it within 38 min or it dies", "Bring 4 herb seeds + 4 compost", 11, 5, 1790101280L, 5, 257)
+				.withTrip(Trip.via("Ardougne cloak", 38, false)),
+			new Candidate("dailies", Candidate.Kind.DAILIES, Tier.READY, "Diary dailies", "Zaff's battlestaves",
+				"Not collected yet; the day resets in 9 hr", null, 3, 0.15, 0, 1, 1391).withTrip(Trip.via("Varrock Teleport", 69, true)),
+			new Candidate("goal:quest:Dragon Slayer II", Candidate.Kind.FOCUS_GOAL, Tier.FOCUS, "Toward Dragon Slayer II", "Start Dream Mentor",
+				"Your focus in Codex Navigator, 62% done, about 6.5 hr to go", null, 60, 0.13, 0, 1, 9813),
+			new Candidate("earn:gear", Candidate.Kind.EARN, Tier.GOAL, "Toward Twisted bow", "Earn 3.4M: Killing Vorkath",
+				"300.0M short; you make 3.4M/hr at it in Codex Money Pilot, about 88 hr to go", null, 60, 0.01, 0, 1, 20997));
+		String json = SharedPlan.of(sample, Arrays.asList("Wayfinder", "Navigator", "Money Pilot", "Ledger"), 1_790_099_000_000L).toJson(GSON);
+		try (java.io.InputStream in = SuiteTest.class.getResourceAsStream("autopilot-planV1.json"))
+		{
+			String file = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).trim();
+			assertEquals(file, json);
+		}
+	}
 }
