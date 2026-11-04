@@ -298,6 +298,15 @@ public class RumourTest
 	}
 
 	@Test
+	public void theWhistleMilestonesAreTornBlueprints()
+	{
+		// OSRS wiki, Hunters' Rumours, milestones: 100 gives a "Torn enhanced quetzal whistle blueprint"
+		// from any loot sack and 250 a "Torn perfected quetzal whistle blueprint" from expert or master sacks.
+		assertEquals("your 100th unlocks a torn enhanced whistle blueprint in loot sacks", Rumours.milestone(100, true));
+		assertEquals("your 250th unlocks a torn perfected whistle blueprint in expert and master sacks", Rumours.milestone(250, true));
+	}
+
+	@Test
 	public void aNewRumourOnlyForThoseWhoDoThem()
 	{
 		RumourBook b = RumourBook.empty();

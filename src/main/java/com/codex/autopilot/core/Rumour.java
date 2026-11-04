@@ -44,9 +44,9 @@ public final class Rumour
 		"a quetzal whistle blueprint from Soar Leader Pitri",
 		"cooking graahk, kyatt and pyre fox",
 		"cooking the antelopes and dashing kebbit",
-		"the enhanced whistle blueprint in loot sacks",
+		"a torn enhanced whistle blueprint in loot sacks",
 		"Guildmaster Apatura's special chest key",
-		"the perfected whistle blueprint in expert and master sacks",
+		"a torn perfected whistle blueprint in expert and master sacks",
 	};
 
 	private Rumour()

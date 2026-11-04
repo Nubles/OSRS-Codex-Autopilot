@@ -532,6 +532,10 @@ public class CodexAutopilotPlugin extends Plugin
 	{
 		if (!config.portTasks() || configManager.getRSProfileKey() == null || client.getGameState() != GameState.LOGGED_IN)
 		{
+			// Not watching: what changes meanwhile is read afresh, never measured as a hand-in.
+			portSeen = null;
+			sailingXp = -1;
+			paidTicks = 0;
 			return false;
 		}
 		long xp;
@@ -673,11 +677,19 @@ public class CodexAutopilotPlugin extends Plugin
 	@Subscribe
 	public void onRuneScapeProfileChanged(RuneScapeProfileChanged event)
 	{
-		// Another account: what was set aside, told or timed belonged to the last one.
-		saveRumour();
+		// Another account: what was set aside, told or timed belonged to the last one. RuneLite has
+		// already moved to the new profile, so what is unsaved goes to the one it came from.
+		String last = event.getPreviousProfile();
+		if (rumourDirty && rumour != null && last != null)
+		{
+			configManager.setConfiguration(CodexAutopilotConfig.GROUP, last, RumourBook.KEY, rumour.toJson(gson));
+		}
 		rumour = null;
 		rumourDirty = false;
-		saveKitten();
+		if (kittenDirty && kitten != null && last != null)
+		{
+			configManager.setConfiguration(CodexAutopilotConfig.GROUP, last, KittenBook.KEY, kitten.toJson(gson));
+		}
 		kitten = null;
 		kittenDirty = false;
 		hunterLevel = 0;
