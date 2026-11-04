@@ -65,6 +65,10 @@ public final class Advisor
 		public IntToLongFunction prices;
 		/** An item's name, or null; for the collection log step. */
 		public IntFunction<String> names;
+		/** The Hunter Guild rumour as Autopilot read it, or as the Hunter Rumours plugin saved it; null when neither knows. */
+		public RumourBook rumour;
+		/** True when the rumour is the Hunter Rumours plugin's, not read by Autopilot itself. */
+		public boolean rumourFromPlugin;
 		/** Ironmen cannot buy their upgrades, so no coins step is offered. */
 		public boolean ironman;
 
@@ -135,6 +139,20 @@ public final class Advisor
 				out.addAll(Dailies.candidates(in.dailies, s, bank, now));
 			}
 		}
+		if (s.isRumours() && in.rumour != null)
+		{
+			try
+			{
+				for (Candidate c : Rumours.candidates(in.rumour))
+				{
+					out.add(in.rumourFromPlugin ? c.withNote(SEEN_BY_HUNTER_RUMOURS) : c);
+				}
+			}
+			catch (RuntimeException e)
+			{
+				// Leave the rumour out this time round.
+			}
+		}
 		if (s.isNavigator() && in.board != null)
 		{
 			out.addAll(in.board.candidates());
@@ -146,6 +164,8 @@ public final class Advisor
 
 	/** Shown on dailies read from Codex Rounds' memory while logged out. */
 	public static final String SEEN_BY_ROUNDS = "as Codex Rounds last saw them";
+	/** Shown on a rumour read from the Hunter Rumours plugin's save. */
+	public static final String SEEN_BY_HUNTER_RUMOURS = "as Hunter Rumours saved it";
 
 	private static Inputs withoutLedger(Inputs in)
 	{
@@ -205,8 +225,10 @@ public final class Advisor
 		List<String> out = new ArrayList<>();
 		boolean travelled = false;
 		boolean roundsDailies = false;
+		boolean hunterRumours = false;
 		for (Candidate c : steps)
 		{
+			hunterRumours |= c.getWhy() != null && c.getWhy().endsWith(SEEN_BY_HUNTER_RUMOURS);
 			travelled |= c.getTrip() != null;
 			roundsDailies |= c.getWhy() != null && c.getWhy().endsWith(SEEN_BY_ROUNDS);
 		}
@@ -249,6 +271,10 @@ public final class Advisor
 		if (s.isRounds() || roundsDailies)
 		{
 			out.add("Rounds");
+		}
+		if (hunterRumours)
+		{
+			out.add("Hunter Rumours");
 		}
 		return out;
 	}

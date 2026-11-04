@@ -37,6 +37,24 @@ Every app is optional and read only: a missing, switched-off or damaged save sim
   <img src="docs/screenshots/plaque-boss.png" alt="The plaque for the pinned boss and its kit">
 </p>
 
+## Your Hunter rumour, in the same order
+
+Inspired by the Hunter Rumours plugin, which a quarter of a million players use to keep track of their Hunter Guild rumour. Autopilot puts the rumour into the account's one order, so it is weighed against the bird houses, the dailies and your goals rather than living in an infobox of its own.
+
+- **Finish it.** "Hunter rumour: Grey chinchompa for Cervus", with where it is hunted and how likely the rare part is: "Box traps at Piscatoris, Kourend Woodland or Isle of Souls; the part is 1 in 50 a catch, sure by 100", and what to bring. With Codex Wayfinder on, the journey is priced to the nearest of those places ("via Fairy ring AKQ, ~40s").
+- **Take the part back.** Once "You find a rare piece of the creature!" shows, the step becomes a quick ready errand: "Take the part back to Teco", with the reward ("Teco pays 4,345 Hunter xp and an expert loot sack") and the milestone it reaches ("your 50th unlocks cooking the antelopes and dashing kebbit").
+- **Get the next one.** With no rumour in hand, an account that does rumours (one has been seen or counted) is offered the best tier its Hunter level opens: "New rumour from Aco or Teco" at 72, Wolf at 91 once At First Light is done.
+- **Your own pace.** A rumour is timed from being given to the rare part, counting only time logged in; after three of a hunting method the step shows your time ("~27 min (your pace)") instead of the half-hour estimate.
+- **Rumours started elsewhere.** Until Autopilot has heard a rumour itself, it plans with the one the Hunter Rumours plugin saved, and says so ("as Hunter Rumours saved it").
+
+There is no varbit for the rumour, so it is read from what the game says: a guild hunter naming a creature (or another hunter's: "I hear you're hunting for Teco."), the quetzal whistle's "Your current rumour target is ...", the rare part, the hand-in and "You have completed N rumours for the Hunter Guild." It never goes to waste, so it is ranked with the goals; the rare part waiting to go back sits with the ready chores. **Hunter rumours** under Sources switches it off.
+
+<p align="center">
+  <img src="docs/screenshots/rumour-panel.png" width="225" alt="Taking a rare part back to Teco">
+  <br>
+  <img src="docs/screenshots/plaque-rumour.png" alt="The plaque for a grey chinchompa rumour">
+</p>
+
 ## What it does
 
 - **One step, always.** The plaque shows the best next step in gilt letters, what kind of step it is, about how long it takes, why it is first, and what to bring. Its edge takes the step's colour: ember when something is about to be lost, green for a ready chore, teal for your focused goal.
@@ -78,6 +96,8 @@ Everything is read on your computer, from the client and from RuneLite's saved p
 - **Codex Gear Roadmap**: the upgrade you are saving toward (`codexgearroadmap/goal`).
 - **Codex Ledger**: your coins, what you hold and its prices (`codexledger/ledger`), read about once a minute.
 - **Codex Quartermaster**: your kits and the trips your bank covers (`codexquartermaster/kitsV1`).
+- **Hunter Rumours** (another author's plugin): the rumour it saved (`hunterrumours/current.hunter`, `hunter.<npc id>`, `current.rumour.finished`), only until Autopilot has read one itself.
+- **RuneLite's chat commands plugin**: the rumour count it keeps (`killcount/hunter rumours`), until Autopilot hears the count itself.
 - **Codex Boss Pilot**: the boss you pinned and your logged trips (`codexbosspilot/pinned`, `logbookV1`).
 - **Codex Rounds**: the dailies it saw today (`codexrounds/memory`), only while you are logged out.
 - **Codex Log Insight**: the slots you marked wanted and the log's kill counts (`codexloginsight/progress`).
@@ -88,7 +108,7 @@ Every source is optional. Bird houses and the special patches, herb runs and hop
 
 ## Rules posture
 
-Codex Autopilot only reads what the game and RuneLite already know and draws a plaque and a panel. It does not click, type, change menus or menu entries, give boss or combat cues, read or write files (apart from the optional field notes below), or send anything over the network. Its notifications go through RuneLite's own notifier, on your computer. The only thing it saves is its own settings, including your learned pace (a few numbers per kind of run, kept with the rest of the plugin's settings for that account) and its top steps for the other Codex apps (`codexautopilot/planV1`, switch off with **Share the plan**). It never writes another plugin's data.
+Codex Autopilot only reads what the game and RuneLite already know and draws a plaque and a panel. It does not click, type, change menus or menu entries, give boss or combat cues, read or write files (apart from the optional field notes below), or send anything over the network. Its notifications go through RuneLite's own notifier, on your computer. The only thing it saves is its own settings, including your learned pace (a few numbers per kind of run, kept with the rest of the plugin's settings for that account), your Hunter rumour as it last read it (`codexautopilot/rumourV1`; it reads game messages and the guild hunters' lines only, never other players' chat) and its top steps for the other Codex apps (`codexautopilot/planV1`, switch off with **Share the plan**). It never writes another plugin's data.
 
 ## Field notes
 

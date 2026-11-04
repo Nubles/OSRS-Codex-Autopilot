@@ -2,6 +2,7 @@ package com.codex.autopilot.ui;
 
 import com.codex.autopilot.core.Bring;
 import com.codex.autopilot.core.Candidate;
+import com.codex.autopilot.core.Rumours;
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -107,7 +108,7 @@ public final class StepCard
 		{
 			return "your pace";
 		}
-		return c.getKind().isChore() ? "estimate" : null;
+		return c.getKind().isChore() || Rumours.HUNT.equals(c.getKey()) ? "estimate" : null;
 	}
 
 	/** The lead step's head: the mark in its medallion, what kind of step, its tier and how long. */

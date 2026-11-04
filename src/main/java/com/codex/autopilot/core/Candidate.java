@@ -33,7 +33,9 @@ public final class Candidate
 		/** The kit chosen in Codex Quartermaster has run out. */
 		RESTOCK("Restock"),
 		/** A collection log slot marked wanted in Codex Log Insight. */
-		LOG("Collection log");
+		LOG("Collection log"),
+		/** The Hunter Guild rumour: finish it, hand in its rare part, or ask for a new one. */
+		RUMOUR("Hunter rumour");
 
 		private final String label;
 

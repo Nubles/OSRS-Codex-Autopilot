@@ -1,0 +1,53 @@
+# A Hunter Guild rumour from start to finish, read from what the game says, as Hunter Rumours reads it.
+# Facts: Guild Hunter Teco is an Expert guild hunter (72 Hunter) and gives dashing kebbit rumours,
+# hunted by falconry (rare part 1 in 10 a catch, certain by 20); an expert rumour pays
+# (Hunter level + 5) x 55 Hunter xp and an expert loot sack; the 50th rumour unlocks cooking the
+# antelopes and dashing kebbit (OSRS wiki, "Hunters' Rumours"). The lines are the wiki's: a guild
+# hunter's rumour line (wiki, Transcript: Guild Hunter Cervus (Adept); any guild hunter's line naming
+# a creature is read, as Hunter Rumours reads it), the rare part
+# ("You find a rare piece of the creature! ..."), the hand-in ("... Here's your reward.") and the
+# count, which RuneLite's chat commands plugin also reads ("You have completed N rumours for the
+# Hunter Guild."). The quetzal whistle's line is the wiki's ("Basic quetzal whistle").
+include /replays/scenes/varrock.scene
+watch over plaque.shown.over
+watch why plaque.shown.why
+skill HUNTER 74
+tick 6
+# Nothing known of rumours yet: nothing to nag about.
+expect title = null
+
+# Teco gives a rumour.
+chat DIALOG "Guild Hunter Teco (Expert)|There's been rumours of a rare dashing kebbit coming in."
+tick 5
+expect key = rumour:hunt
+expect over = "Hunter rumour"
+expect title = "Dashing kebbit for Teco"
+expect why ~ "Falconry at Piscatoris; the part is 1 in 10 a catch, sure by 20"
+expect saved.rumourV1 ~ "DASHING_KEBBIT"
+
+# The count arrives with an earlier hand-in; then the rare part drops.
+chat GAMEMESSAGE "You have completed <col=ff0000>49</col> rumours for the Hunter Guild."
+chat GAMEMESSAGE "<col=ef1020>You find a rare piece of the creature! You should take it back to the Hunter Guild.</col>"
+tick 5
+expect key = rumour:hand-in
+expect title = "Take the part back to Teco"
+expect why ~ "Teco pays 4,345 Hunter xp and an expert loot sack; your 50th unlocks cooking"
+
+# Handed in: the next rumour is the step, from the best tier at 74 Hunter.
+chat DIALOG "Guild Hunter Teco (Expert)|Excellent! Thanks for getting that done. Here's your reward."
+chat GAMEMESSAGE "You have completed <col=ff0000>50</col> rumours for the Hunter Guild."
+tick 5
+expect key = rumour:new
+expect title = "New rumour from Aco or Teco"
+expect why = "At 74 Hunter, expert rumours pay 4,345 Hunter xp and an expert loot sack"
+
+# The whistle tells of a rumour from Cervus picked up elsewhere.
+chat GAMEMESSAGE "Your current rumour target is a grey chinchompa. You'll need to bring back some of its fur. Cervus was the source of the rumour."
+tick 5
+expect over = "Hunter rumour"
+expect title = "Grey chinchompa for Cervus"
+
+# Switched off: no rumour step, and nothing read.
+config rumours false
+tick 5
+expect title = null
