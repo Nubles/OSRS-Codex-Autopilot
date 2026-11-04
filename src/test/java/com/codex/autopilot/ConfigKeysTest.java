@@ -29,7 +29,7 @@ public class ConfigKeysTest
 		}
 		assertEquals(new HashSet<>(Arrays.asList(
 			"plaque", "quiet", "stepAside", "timeBudget",
-			"chores", "herbs", "hops", "dailies", "kingdom", "rumours", "portTasks", "kitten", "slayer", "navigator", "bankSteward",
+			"chores", "herbs", "hops", "dailies", "kingdom", "rumours", "portTasks", "kitten", "slayer", "gemstoneCrab", "navigator", "bankSteward",
 			"goalFirst", "wasteHours", "approvalTarget", "cofferSlack", "learnPace",
 			"notify", "notifyWaste", "notifyReady",
 			// The Codex suite.
@@ -44,5 +44,6 @@ public class ConfigKeysTest
 		assertEquals("portTasksV1", com.codex.autopilot.core.PortLog.KEY);
 		assertEquals("kittenV1", com.codex.autopilot.core.KittenBook.KEY);
 		assertEquals("slayerV1", com.codex.autopilot.core.SlayerLog.KEY);
+		assertEquals("gemstoneCrabV1", com.codex.autopilot.core.CrabLog.KEY);
 	}
 }

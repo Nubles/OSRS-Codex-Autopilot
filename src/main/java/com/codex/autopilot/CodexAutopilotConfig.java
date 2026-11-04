@@ -194,11 +194,25 @@ public interface CodexAutopilotConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "gemstoneCrab",
+		name = "Gemstone Crab",
+		description = "While you are at one of the Gemstone Crab's three mines: how long until it burrows (from its own health bar),"
+			+ " its shell while it is yours to mine, where it went once it has moved (learned from your own sightings), and your own"
+			+ " xp and gems an hour there, for this account",
+		section = SOURCES,
+		position = 9
+	)
+	default boolean gemstoneCrab()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 		keyName = "navigator",
 		name = "Codex Navigator goals",
 		description = "Add the next step toward the goals you pinned in Codex Navigator",
 		section = SOURCES,
-		position = 9
+		position = 10
 	)
 	default boolean navigator()
 	{
@@ -210,7 +224,7 @@ public interface CodexAutopilotConfig extends Config
 		name = "Codex Bank Steward bank",
 		description = "Check what a chore needs against the bank Codex Bank Steward last saw",
 		section = SOURCES,
-		position = 10
+		position = 11
 	)
 	default boolean bankSteward()
 	{

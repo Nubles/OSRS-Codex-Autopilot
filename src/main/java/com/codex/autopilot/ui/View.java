@@ -5,6 +5,7 @@ import com.codex.autopilot.core.Budget;
 import com.codex.autopilot.core.Plan;
 import com.codex.autopilot.core.KittenBook;
 import com.codex.autopilot.core.PortLog;
+import com.codex.autopilot.core.CrabLog;
 import com.codex.autopilot.core.SlayerLog;
 import java.util.Collections;
 import java.util.List;
@@ -52,6 +53,8 @@ public final class View
 	public final KittenBook kitten;
 	/** The account's Slayer task, for its own section; null when none is held or the source is off. */
 	public final SlayerLog slayer;
+	/** The Gemstone Crab while the player is at one of its mines, for its own section; null elsewhere or when the source is off. */
+	public final CrabLog crab;
 
 	public View(boolean loggedIn, boolean known, Plan plan, Activity activity, boolean minigamePilot, String nextUp,
 		boolean quiet, boolean skipped, List<Source> sources)
@@ -88,6 +91,14 @@ public final class View
 		boolean quiet, boolean skipped, List<Source> sources, Budget budget, Budget.Fit fit, List<String> fedBy, PortLog ports,
 		KittenBook kitten, SlayerLog slayer)
 	{
+		this(loggedIn, known, plan, activity, minigamePilot, nextUp, quiet, skipped, sources, budget, fit, fedBy, ports, kitten, slayer,
+			null);
+	}
+
+	public View(boolean loggedIn, boolean known, Plan plan, Activity activity, boolean minigamePilot, String nextUp,
+		boolean quiet, boolean skipped, List<Source> sources, Budget budget, Budget.Fit fit, List<String> fedBy, PortLog ports,
+		KittenBook kitten, SlayerLog slayer, CrabLog crab)
+	{
 		this.loggedIn = loggedIn;
 		this.known = known;
 		this.plan = plan == null ? Plan.EMPTY : plan;
@@ -103,6 +114,7 @@ public final class View
 		this.ports = ports == null || ports.getTasks().isEmpty() ? null : ports;
 		this.kitten = kitten == null || kitten.isBlank() ? null : kitten;
 		this.slayer = slayer == null || !slayer.hasTask() && !slayer.doesSlayer() ? null : slayer;
+		this.crab = crab == null || crab.getNear() == null ? null : crab;
 	}
 
 	/** Whether a time budget is set, so the panel shows what fits rather than everything. */

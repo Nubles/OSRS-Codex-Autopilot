@@ -73,6 +73,8 @@ public final class Advisor
 		public KittenBook kitten;
 		/** The account's Slayer task and pace as last read; null when the source is off or nothing is known. */
 		public SlayerLog slayer;
+		/** The account's time at the Gemstone Crab, and the crab as last seen; null when the source is off or never seen. */
+		public CrabLog crab;
 		/** The account's port tasks, read live or as last saved; null when none are known. */
 		public PortLog ports;
 		/** Ironmen cannot buy their upgrades, so no coins step is offered. */
@@ -179,6 +181,17 @@ public final class Advisor
 			catch (RuntimeException e)
 			{
 				// Leave the Slayer task out this time round.
+			}
+		}
+		if (s.isGemstoneCrab() && in.crab != null)
+		{
+			try
+			{
+				out.addAll(Crabs.candidates(in.crab, now));
+			}
+			catch (RuntimeException e)
+			{
+				// Leave the crab out this time round.
 			}
 		}
 		if (s.isPortTasks() && in.ports != null)

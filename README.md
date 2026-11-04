@@ -109,6 +109,23 @@ Where and what to bring are written in only for the tasks checked against the OS
   <img src="docs/screenshots/plaque-slayer.png" alt="The plaque for a kurask task at the player's own pace">
 </p>
 
+## The Gemstone Crab, with its clock, its shell and where it went
+
+Inspired by the Plugin Hub's Gemstone Crab plugins, which time the crab, highlight the cave and count your gems for the session. Autopilot puts the crab into the account's one order while you stand at one of its mines, and keeps what it learns for the account rather than the session.
+
+- **Its clock.** "Gemstone Crab: North mine, ~6 min left". The crab's bar is not moved by anyone's damage; it drains to show when the crab burrows (OSRS wiki). Autopilot times that fall on the crab in front of you, and before it has fallen far enough to tell, uses your own timed crabs, or else the wiki's "approximately every 10 minutes", marked "(est.)".
+- **Its shell.** When the game says "You gained enough understanding of the crab to mine from its remains.", the step turns to "Mine its shell, 3 gems" with the seconds of its 90 left, and counts the gems down as you mine them. A shell that was not yours is counted, never offered.
+- **Where it went.** The wiki gives no order to its moves, so Autopilot learns one from your own sightings: where it burrowed and where you next saw it, within eight minutes. Once three moves from a mine agree, the step names the next mine ("Follow it to the south-west mine; 3 of 3 moves you saw from the east mine went there") and Codex Wayfinder prices the way there; until then it says the cave at every mine leads to the crab and prices the nearer of the other two.
+- **Your own rates.** Combat xp gained and gems mined while at the crab, over the time spent there, for this account: "your 137k xp/hr, 17 gems/hr here", with each gem tallied in the panel.
+
+It reads the crab's npc and its health bar, where you stand, your combat xp and the game's own lines about the crab; it never gives in-fight cues. **Gemstone Crab** under Sources switches it off.
+
+<p align="center">
+  <img src="docs/screenshots/gemstone-crab-panel.png" width="225" alt="The Gemstone Crab at the north mine: its bar, where it goes next and the player's own rates">
+  <br>
+  <img src="docs/screenshots/plaque-gemstone-crab.png" alt="The plaque at the Gemstone Crab">
+</p>
+
 ## What it does
 
 - **One step, always.** The plaque shows the best next step in gilt letters, what kind of step it is, about how long it takes, why it is first, and what to bring. Its edge takes the step's colour: ember when something is about to be lost, green for a ready chore, teal for your focused goal.
@@ -162,7 +179,7 @@ Every source is optional. Bird houses and the special patches, herb runs and hop
 
 ## Rules posture
 
-Codex Autopilot only reads what the game and RuneLite already know and draws a plaque and a panel. It does not click, type, change menus or menu entries, give boss or combat cues, read or write files (apart from the optional field notes below), or send anything over the network. Its notifications go through RuneLite's own notifier, on your computer. The only thing it saves is its own settings, including your learned pace (a few numbers per kind of run, kept with the rest of the plugin's settings for that account), your Hunter rumour as it last read it (`codexautopilot/rumourV1`; it reads game messages and the guild hunters' lines only, never other players' chat), your kitten as it last saw it (`codexautopilot/kittenV1`), your Slayer task and kill pace (`codexautopilot/slayerV1`) and its top steps for the other Codex apps (`codexautopilot/planV1`, switch off with **Share the plan**). It never writes another plugin's data.
+Codex Autopilot only reads what the game and RuneLite already know and draws a plaque and a panel. It does not click, type, change menus or menu entries, give boss or combat cues, read or write files (apart from the optional field notes below), or send anything over the network. Its notifications go through RuneLite's own notifier, on your computer. The only thing it saves is its own settings, including your learned pace (a few numbers per kind of run, kept with the rest of the plugin's settings for that account), your Hunter rumour as it last read it (`codexautopilot/rumourV1`; it reads game messages and the guild hunters' lines only, never other players' chat), your kitten as it last saw it (`codexautopilot/kittenV1`), your Slayer task and kill pace (`codexautopilot/slayerV1`), your time, xp and gems at the Gemstone Crab and the moves you saw it make (`codexautopilot/gemstoneCrabV1`) and its top steps for the other Codex apps (`codexautopilot/planV1`, switch off with **Share the plan**). It never writes another plugin's data.
 
 ## Field notes
 

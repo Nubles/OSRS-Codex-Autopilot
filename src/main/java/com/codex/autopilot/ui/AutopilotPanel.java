@@ -171,6 +171,13 @@ public class AutopilotPanel extends PluginPanel
 			}
 		}
 
+		// Where the player is now comes before what waits elsewhere.
+		if (view.crab != null && !view.steppingAside() && !view.quiet)
+		{
+			list.space(2);
+			list.add(new SectionHeader("Gemstone Crab", CrabCard.summary(view.crab)));
+			list.add(CrabCard.card(view.crab, WIDTH - 30));
+		}
 		if (view.kitten != null && !view.steppingAside() && !view.quiet)
 		{
 			list.space(2);

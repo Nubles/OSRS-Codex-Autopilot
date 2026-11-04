@@ -13,6 +13,7 @@ public final class Settings
 	private boolean kitten = true;
 	private boolean portTasks = true;
 	private boolean slayer = true;
+	private boolean gemstoneCrab = true;
 	private boolean navigator = true;
 	private boolean bankSteward = true;
 	private boolean wayfinder = true;
@@ -83,6 +84,18 @@ public final class Settings
 	public boolean isSlayer()
 	{
 		return slayer;
+	}
+
+	/** The Gemstone Crab as a step while at one of its mines. */
+	public Settings gemstoneCrab(boolean v)
+	{
+		gemstoneCrab = v;
+		return this;
+	}
+
+	public boolean isGemstoneCrab()
+	{
+		return gemstoneCrab;
 	}
 
 	/** The Sailing port tasks as steps. */
