@@ -33,7 +33,9 @@ public class ConfigKeysTest
 			"goalFirst", "wasteHours", "approvalTarget", "cofferSlack", "learnPace",
 			"notify", "notifyWaste", "notifyReady",
 			// The Codex suite.
-			"wayfinder", "moneyPilot", "gearRoadmap", "ledger", "quartermaster", "bossPilot", "roundsDailies", "logInsight", "sharePlan")),
+			"wayfinder", "moneyPilot", "gearRoadmap", "ledger", "quartermaster", "bossPilot", "roundsDailies", "logInsight", "sharePlan",
+			// The optional local record.
+			"fieldNotes")),
 			keys);
 		// Saved per account beside the settings.
 		assertEquals("paceV1", Pace.KEY);
