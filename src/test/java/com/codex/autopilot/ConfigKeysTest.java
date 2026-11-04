@@ -30,7 +30,7 @@ public class ConfigKeysTest
 		assertEquals(new HashSet<>(Arrays.asList(
 			"plaque", "quiet", "stepAside", "timeBudget",
 			"chores", "herbs", "hops", "dailies", "kingdom", "rumours", "portTasks", "kitten", "slayer", "gemstoneCrab", "navigator", "bankSteward",
-			"goalFirst", "wasteHours", "approvalTarget", "cofferSlack", "learnPace",
+			"goalFirst", "wasteHours", "approvalTarget", "cofferSlack", "learnPace", "slayerSkipPlan", "slayerSkipMaster", "slayerSkipEvery",
 			"notify", "notifyWaste", "notifyReady",
 			// The Codex suite.
 			"wayfinder", "moneyPilot", "gearRoadmap", "ledger", "quartermaster", "bossPilot", "roundsDailies", "logInsight", "sharePlan",

@@ -63,6 +63,26 @@ public final class Slayer
 		return task % 10 == 0 ? 5 : 1;
 	}
 
+	/**
+	 * The next task in a row after this streak whose multiplier is at least this much: 5 for the
+	 * next 10th, 15 for the next 50th and so on.
+	 */
+	public static int nextMilestone(int streak, int atLeast)
+	{
+		int t = Math.max(streak, 0) + 1;
+		while (multiplier(t) < atLeast)
+		{
+			t++;
+		}
+		return t;
+	}
+
+	/** "50th". */
+	public static String ordinal(int n)
+	{
+		return Rumours.ordinal(n);
+	}
+
 	/** A quest a master waits on. */
 	public enum Quest
 	{

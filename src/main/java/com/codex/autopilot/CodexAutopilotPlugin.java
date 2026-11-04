@@ -32,6 +32,7 @@ import com.codex.autopilot.core.Settings;
 import com.codex.autopilot.core.SharedPlan;
 import com.codex.autopilot.core.CrabLog;
 import com.codex.autopilot.core.GemstoneCrab;
+import com.codex.autopilot.core.SkipPlan;
 import com.codex.autopilot.core.Slayer;
 import com.codex.autopilot.core.SlayerLog;
 import com.codex.autopilot.core.Tier;
@@ -1316,7 +1317,9 @@ public class CodexAutopilotPlugin extends Plugin
 		if (s.isSlayer())
 		{
 			SlayerLog log = slayerLog();
-			in.slayer = log.doesSlayer() ? log.copy() : null;
+			in.slayer = log.doesSlayer()
+				? log.copy().withPlan(new SkipPlan(config.slayerSkipPlan(), config.slayerSkipMaster(), config.slayerSkipEvery()))
+				: null;
 		}
 		if (s.isGemstoneCrab())
 		{

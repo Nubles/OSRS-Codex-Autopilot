@@ -13,7 +13,9 @@ import net.runelite.api.gameval.ItemID;
  * fight needs, and the time left at the player's own kills an hour once twenty kills are timed;</li>
  * <li>"New task from Duradel" once a task is done, for an account that does Slayer: the most
  * demanding master the account's combat, Slayer level and quests open, with the points the next
- * task in a row pays there, and Konar's when she pays more.</li>
+ * task in a row pays there, and Konar's when she pays more;</li>
+ * <li>with the player's skip plan on ({@link SkipPlan}), "Milestone task from Konar" when the next
+ * task in a row is one of the plan's milestones, else "Quick task from Turael or Spria".</li>
  * </ul>
  */
 public final class Slayers
@@ -159,12 +161,20 @@ public final class Slayers
 		{
 			return null;
 		}
+		Slayer.Account a = log.getAccount();
+		SkipPlan.Advice plan = log.getPlan().advise(log);
+		if (plan != null && plan.master != null)
+		{
+			// The player's skip plan: a milestone from their high-points master, else a quick one.
+			String title = plan.milestone ? "Milestone task from " + plan.master.nameFor(a) : "Quick task from " + SkipPlan.quick(a);
+			return new Candidate(NEW, Candidate.Kind.SLAYER, Tier.GOAL, "Slayer", title, plan.text, null, NEW_MINUTES, NEW_URGENCY, 0, 1,
+				ItemID.SLAYER_GEM);
+		}
 		Slayer.Master m = next(log);
 		if (m == null)
 		{
 			return null;
 		}
-		Slayer.Account a = log.getAccount();
 		List<String> why = new ArrayList<>();
 		why.add(m == Slayer.Master.TURAEL ? "The master open to you at " + a.combat + " combat"
 			: "The highest master your " + a.combat + " combat" + (m.getSlayer() > 0 ? " and " + a.slayer + " Slayer" : "") + " reach");
