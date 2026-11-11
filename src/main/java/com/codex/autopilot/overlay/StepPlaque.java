@@ -87,10 +87,11 @@ public class StepPlaque extends Overlay
 		g.fill(shape);
 
 		// The tier stripe, inside the rounded edge.
-		g.setClip(shape);
+		Shape clip = g.getClip();
+		g.clip(shape);
 		g.setPaint(new GradientPaint(0, 0, tint, 0, height, Theme.alpha(tint, 80)));
 		g.fillRect(0, 0, 3, height);
-		g.setClip(null);
+		g.setClip(clip);
 
 		g.setColor(Theme.alpha(Theme.GOLD, 150));
 		g.draw(shape);
